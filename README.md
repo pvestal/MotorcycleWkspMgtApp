@@ -44,11 +44,11 @@ npm i firebase-tools
 
 Once you setup and configure firebase, return and load needed API keys into project.
 
-###Firebase init
+### Firebase init
 ```sh
 firebase init
 ```
-###Configure firebase project to communicate
+### Configure firebase project to communicate
 
 This should be the same settings as from google console project settings.
 
