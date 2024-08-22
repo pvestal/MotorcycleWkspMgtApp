@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "motocraft-twoheads"
+  },
+  "targets": {},
+  "etags": {
+    "motocraft-twoheads": {
+      "extensionInstances": {}
+    }
+  },
+  "dataconnectEmulatorConfig": {}
+}
