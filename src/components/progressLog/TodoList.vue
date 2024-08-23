@@ -6,8 +6,8 @@
         <span class="item-title">{{ item.itemTitle }}</span>
         <span :class="`status ${item.status.toLowerCase().replace(' ', '-')}`">{{ item.status }}</span>
         <span :class="['priority', item.priority.toLowerCase()]">{{ item.priority }}</span>
-        <button @click="navigateToEdit(item.id)">Edit</button>
-        <button @click="navigateToView(item.id)">View</button>
+        <button @click="navigateToEdit(item.id)"><span class="material-symbols-outlined">edit</span></button>
+        <button @click="navigateToView(item.id)"><span class="material-symbols-outlined">visibility</span></button>
       </li>
     </ul>
     <!-- <button @click="navigateToAdd">Add New Item</button> -->

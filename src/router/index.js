@@ -17,10 +17,21 @@ import { logEvent } from 'firebase/analytics';
 import { analytics } from '../fbConfig';
 import { useUserStore } from '../stores/userStore';
 
+import AddProject from '@/components/project/AddProject.vue'
+import EditProject from '@/components/project/EditProject.vue'
+import ListProjects from '@/components/project/ListProjects.vue'
+import ProjectForm from '@/components/project/ProjectForm.vue'
+
 logEvent(analytics, 'page_view', {
   page_title: 'Profile Page',
   page_location: window.location.href,
   page_path: '/profile'
+});
+
+logEvent(analytics, 'page_view', {
+  page_title: 'About Us',
+  page_location: window.location.href,
+  page_path: '/about'
 });
 
 
@@ -73,6 +84,29 @@ const routes = [
     path: '/viewTodo/:id',
     name: 'ViewTodo',
     component: ViewTodo
+  },
+  {
+    path: '/addProject',
+    name: 'addProject',
+    component: AddProject,
+    // meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/editProject/:id',
+    name: 'editProject',
+    component: EditProject,
+    // meta: {requiresAuth: true, requiresAdmin: true}
+  },
+  {
+    path: '/viewProject/:id',
+    name: 'viewProject',
+    component: ProjectForm,
+    // meta: {requiresAuth: true, requiresAdmin: true}
+  },
+  {
+    path: '/projects',
+    name: 'listProjects',
+    component: ListProjects
   },
   {
     path: '/admin/edit/:id',

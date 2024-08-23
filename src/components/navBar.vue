@@ -13,27 +13,25 @@
     <!-- Sidebar -->
     <aside :class="{ 'sidebar-open': sidebarOpen }" class="sidebar">
       <div class="sidebar-content">
-        <div v-if="loggedIn" class="profile-section">
+        <div v-if="loggedIn" class="profile-section" @click="navigate('/profile')">
           <img v-if="user.photoURL" :src="user.photoURL" alt="User Avatar" class="profile-avatar" />
           <h3>{{ user.displayName }}</h3>
           <p>{{ user.email }}</p>
-          <p><strong>{{ user.role }}</strong></p>
+          <p><span class="material-symbols-outlined">build</span> {{ user.role }}</p>
         </div>
 
         <ul v-if="loggedIn" class="nav-links">
-          <li @click="navigate('/profile')">Profile</li>
-          <li @click="navigate('/login')">Login</li>
-          <li><span class="material-symbols-outlined">
-build
-</span></li>
-          <li @click="navigate('/admin')">User Management</li>
-          <li @click="navigate('/admin/edit/:id')">Edit User</li>
-          <li @click="navigate('/progress')">Progress Log</li>
-          <li @click="navigate('/about')">About Us</li>
+          <li @click="navigate('/profile')"><span class="material-symbols-outlined">account_box</span> Profile</li>
+          <li @click="navigate('/login')"><span class="material-symbols-outlined">logout</span> Logout</li>
+          <li><span class="material-symbols-outlined">key</span> Reserved</li>
+          <li @click="navigate('/admin')"><span class="material-symbols-outlined">manage_accounts</span> Admin</li>
+          <!-- <li @click="navigate('/admin/edit/:id')">Edit User</li> -->
+          <li @click="navigate('/progress')"><span class="material-symbols-outlined">menu</span> Todo List</li>
+          <li @click="navigate('/about')"><span class="material-symbols-outlined">info</span> About Us</li>
         </ul>
         <ul v-if="!loggedIn" class="nav-links">
-          <li @click="navigate('/about')">About Us</li>
-          <li @click="navigate('/login')">Register/Login</li>
+          <li @click="navigate('/about')"><span class="material-symbols-outlined">info</span> About Us</li>
+          <li @click="navigate('/login')"><span class="material-symbols-outlined">login</span> Login/Register</li>
         </ul>
         <button class="close-btn" @click="toggleSidebar">Close</button>
       </div>

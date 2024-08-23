@@ -1,33 +1,41 @@
 <template>
-  <div class="form-container">
-    <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2>
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="priority">Priority:</label>
-        <select v-model="item.priority" id="priority" class="form-control">
-          <option>High</option>
-          <option>Medium</option>
-          <option>Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="status">Status:</label>
-        <select v-model="item.status" id="status" class="form-control">
-          <option>Pending</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="itemTitle">Item Title:</label>
-        <input type="text" v-model="item.itemTitle" id="itemTitle" class="form-control" required maxlength="255" />
-      </div>
-      
-      <div class="form-actions">
-        <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Item</button>
-        <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
-      </div>
-    </form>
+  <div>
+    <!-- Toggle Button -->
+    <button class="btn-toggle" @click="toggleForm">
+      {{ showForm ? 'Hide Form' : 'Show Form' }}
+    </button>
+
+    <!-- Form Container (Visible based on showForm state) -->
+    <div v-if="showForm" class="form-container">
+      <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2>
+      <form @submit.prevent="handleSubmit">
+        <div class="form-group">
+          <label for="priority">Priority:</label>
+          <select v-model="item.priority" id="priority" class="form-control">
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="status">Status:</label>
+          <select v-model="item.status" id="status" class="form-control">
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="itemTitle">Item Title:</label>
+          <input type="text" v-model="item.itemTitle" id="itemTitle" class="form-control" required maxlength="255" />
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Item</button>
+          <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -44,6 +52,7 @@ const route = useRoute();
 
 const item = ref({ priority: 'Medium', status: 'Pending', itemTitle: '' });
 const isEditing = ref(false);
+const showForm = ref(false); // State to control form visibility
 
 onMounted(() => {
   if (route.params.id) {
@@ -51,6 +60,7 @@ onMounted(() => {
     const existingItem = progressStore.items.find(i => i.id === route.params.id);
     if (existingItem) {
       item.value = { ...existingItem };
+      showForm.value = true; // Automatically show the form when editing
     } else {
       errorStore.showError("Item not found");
       router.push('/progress');
@@ -62,8 +72,10 @@ const handleSubmit = async () => {
   try {
     if (isEditing.value) {
       await progressStore.updateItem(route.params.id, item.value);
+      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
     } else {
       await progressStore.addItem(item.value);
+      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
     }
     router.push('/progress');
   } catch (error) {
@@ -74,9 +86,31 @@ const handleSubmit = async () => {
 const cancelEdit = () => {
   router.push('/progress');
 };
+
+const toggleForm = () => {
+  showForm.value = !showForm.value;
+};
 </script>
 
 <style scoped>
+/* Toggle Button Styles */
+.btn-toggle {
+  display: block;
+  margin: 20px auto;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-toggle:hover {
+  background-color: #0056b3;
+}
+
+/* Form Styles */
 .form-container {
   max-width: 500px;
   margin: 0 auto;

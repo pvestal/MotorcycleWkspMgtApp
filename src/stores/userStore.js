@@ -93,9 +93,10 @@ export const useUserStore = defineStore({
             createdAt: Timestamp.now(),
             updatedBy: {
               uid: result.user.uid,
-              displayName: result.user.displayName || "No Name",
-              photoURL: result.user.photoURL || "default-url",
-              role: "customer",
+              displayName: result.user.displayName,
+              photoURL: result.user.photoURL,
+              role: result.user.role,
+              userStatus: result.user.userStatus,
             },
           };
     

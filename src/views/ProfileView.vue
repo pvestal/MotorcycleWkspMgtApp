@@ -1,7 +1,7 @@
 <template>
   <div v-if="userProfile" class="profile-container">
     <h2>User Profile</h2>
-    <div class="profile-user-email"><strong>Email:</strong> {{ userProfile.email }}</div>
+    <div class="profile-user-email"><span class="material-symbols-outlined">email</span> {{ userProfile.email }}</div>
     <img :src="userProfile.photoURL" alt="User Photo" />
     <br>
     <div class="profile-user-role"><strong>Role:</strong> {{ userProfile.role }}</div>

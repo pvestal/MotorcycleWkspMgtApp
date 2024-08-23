@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia';
+import { useErrorStore } from './errorStore';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../fbConfig';
 
 export const useProgressStore = defineStore('progressStore', {
     state: () => ({
         items: [],
-        isLoading: false,
-        error: null,
     }),
     getters: {
         highPriorityItems: (state) => {
@@ -18,7 +17,7 @@ export const useProgressStore = defineStore('progressStore', {
     },
     actions: {
         async fetchItems() {
-            this.isLoading = true;
+            const errorStore = useErrorStore();
             try {
                 const querySnapshot = await getDocs(collection(db, "progressItems"));
                 this.items = querySnapshot.docs.map((doc) => ({
@@ -26,24 +25,35 @@ export const useProgressStore = defineStore('progressStore', {
                     ...doc.data(),
                 }));
             } catch (err) {
-                this.error = err.message;
+                errorStore.showError(err)
             } finally {
-                this.isLoading = false;
+                console.log("fetchItems called")
             }
         },
         async addItem(item) {
-            this.isLoading = true;
+            const errorStore = useErrorStore();
             try {
                 const docRef = await addDoc(collection(db, "progressItems"), item);
-                this.items.push({ id: docRef.id, ...item });
+                itemData.id = docRef.id;
+                itemData.createdAt = Timestamp.now();
+                itemData.updatedAt = Timestamp.now();
+                itemData.createdBy = {
+                  uid: currentUser.uid,
+                  displayName: currentUser.displayName,
+                  photoURL: currentUser.photoURL || '',
+                  role: currentUser.role,
+                  userStatus: currentUser.userStatus
+                };
+                itemData.updatedBy = { ...itemData.createdBy };
+                this.items.push({ id: itemData.id, ...itemData });
             } catch (err) {
-                this.error = err.message;
+                errorStore.showError(err)
             } finally {
-                this.isLoading = false;
+                console.log("addItem called")
             }
         },
         async updateItem(id, updatedItem) {
-            this.isLoading = true;
+            const errorStore = useErrorStore();
             try {
                 const itemDoc = doc(db, "progressItems", id);
                 await updateDoc(itemDoc, updatedItem);
@@ -52,20 +62,20 @@ export const useProgressStore = defineStore('progressStore', {
                     this.items[index] = { id, ...updatedItem };
                 }
             } catch (err) {
-                this.error = err.message;
+                errorStore.showError(err)
             } finally {
-                this.isLoading = false;
+                console.log("item updated")
             }
         },
         async removeItem(id) {
-            this.isLoading = true;
+           
             try {
                 await deleteDoc(doc(db, "progressItems", id));
                 this.items = this.items.filter((item) => item.id !== id);
             } catch (err) {
                 this.error = err.message;
             } finally {
-                this.isLoading = false;
+              
             }
         },
     }
