@@ -7,16 +7,19 @@
     <button v-if="userStore.isAuthenticated" @click="logOut" name="logoutBtn">Logout</button>
   </div>
 
-  <!-- <userProfileComponent v-if="userStore.isAuthenticated" :user="userStore.user" /> -->
+  <userProfileComponent v-if="userStore.isAuthenticated" :user="userStore.user" />
 </template>
 
 
 <script setup>
 import { onMounted } from 'vue';
 import { useUserStore } from '../stores/userStore'; 
-import userProfileComponent from '../components/userManagement/userProfileComponent.vue'
+import { useErrorStore } from '@/stores/errorStore';
+import userProfileComponent from '../components/Users/userProfileComponent.vue'
 
-const userStore = useUserStore(); // Initialize the userStore
+
+const userStore = useUserStore(); 
+const errorStore = useErrorStore();
 
 onMounted(async () => {
   await userStore.fetchUser(); // Fetch user details on mount if already logged in
@@ -24,9 +27,9 @@ onMounted(async () => {
 
 const loginWithGoogle = async () => {
   try {
-    await userStore.login();  // Use the login action from userStore
+    await userStore.loginWithGoogle();  // Use the login action from userStore
   } catch (error) {
-    console.error('Google login error:', error.message);
+    errorStore.showError('Google login error:', error.message);
   }
 };
 
@@ -35,7 +38,7 @@ const logOut = async () => {
     await userStore.logout();
     console.log("User logged out");
   } catch (error) {
-    console.error('Error logging out:', error.message);
+    errorStore.showError('Error logging out:', error.message);
   }
 };
 </script>

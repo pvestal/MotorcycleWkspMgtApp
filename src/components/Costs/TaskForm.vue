@@ -7,7 +7,7 @@
 
     <!-- Form Container (Visible based on showForm state) -->
     <div v-if="showForm" class="form-container">
-      <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2>
+      <!-- <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2> -->
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
           <label for="priority">Priority:</label>
@@ -42,10 +42,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useProgressStore } from '../../stores/progressStore';
+import { usetaskStore } from '../../stores/taskStore';
 import { useErrorStore } from '../../stores/errorStore';
 
-const progressStore = useProgressStore();
+const taskStore = usetaskStore();
 const errorStore = useErrorStore();
 const router = useRouter();
 const route = useRoute();
@@ -57,7 +57,7 @@ const showForm = ref(false); // State to control form visibility
 onMounted(() => {
   if (route.params.id) {
     isEditing.value = true;
-    const existingItem = progressStore.items.find(i => i.id === route.params.id);
+    const existingItem = taskStore.items.find(i => i.id === route.params.id);
     if (existingItem) {
       item.value = { ...existingItem };
       showForm.value = true; // Automatically show the form when editing
@@ -71,20 +71,20 @@ onMounted(() => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await progressStore.updateItem(route.params.id, item.value);
+      await taskStore.updateItem(route.params.id, item.value);
       this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
     } else {
-      await progressStore.addItem(item.value);
+      await taskStore.addItem(item.value);
       this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
     }
-    router.push('/progress');
+    router.push('/tasks');
   } catch (error) {
     errorStore.showError(error.message || "An unexpected error occurred");
   }
 };
 
 const cancelEdit = () => {
-  router.push('/progress');
+  router.push('/tasks');
 };
 
 const toggleForm = () => {

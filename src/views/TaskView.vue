@@ -1,29 +1,28 @@
 <template>
     <div>
-        <TodoForm/>
-        <h2>App progress log..</h2>
-        <TodoList />
-
+        <TaskForm/>
+        <h1>App progress log..</h1>
+        <ListTasks v-if="tasks"/>
     </div>
 </template> 
 
 <script setup>
-import TodoForm from '../components/progressLog/TodoForm.vue';
-import TodoList from '../components/progressLog/TodoList.vue';
+import TaskForm from '../components/Tasks/TaskForm.vue';
+import ListTasks from '../components/Tasks/ListTasks.vue';
 
 </script>
 
 <style>
 
 /* Container for the ordered list */
-ol.todo-list {
+ol.task-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
     counter-reset: item;
 }
 
-.todo-list li {
+.task-list li {
     display: flex;
     align-items: center;
     padding: 10px;
@@ -34,7 +33,7 @@ ol.todo-list {
     counter-increment: item;
 }
 
-.todo-list li::before {
+.task-list li::before {
     content: counter(item) ".";
     margin-right: 10px;
     font-weight: bold;

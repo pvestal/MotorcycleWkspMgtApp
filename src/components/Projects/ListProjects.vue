@@ -1,58 +1,61 @@
 <template>
   <div>
-    <h2>Todo List</h2>
-    <ul class="todo-list">
-      <li v-for="item in items" :key="item.id">
-        <span class="item-title">{{ item.itemTitle }}</span>
-        <span :class="`status ${item.status.toLowerCase().replace(' ', '-')}`">{{ item.status }}</span>
-        <span :class="['priority', item.priority.toLowerCase()]">{{ item.priority }}</span>
-        <button @click="navigateToEdit(item.id)"><span class="material-symbols-outlined">edit</span></button>
-        <button @click="navigateToView(item.id)"><span class="material-symbols-outlined">visibility</span></button>
+    <h2>Projects List</h2>
+    <button><span @click="navigateToAdd" class="material-symbols-outlined">add_ad</span></button>
+    <ul class="project-list">
+      <li v-for="project in projects" :key="project.id">
+        {{ project }}
+        <span class="item-title">{{ project.projectName }}</span>
+        <span><img v-if="project.updatedBy.photoURL" :src="project.updatedBy.photoURL"</span>
+        <span :class="`status ${project.status.toLowerCase().replace(' ', '-')}`">{{ project.status }}</span>
+        <!-- <span :class="['priority', item.priority.toLowerCase()]">{{ item.priority }}</span> -->
+        <button @click="navigateToEdit(project.projectId)"><span class="material-symbols-outlined">edit</span></button>
+        <button @click="navigateToView(project.projectId)"><span class="material-symbols-outlined">visibility</span></button>
       </li>
     </ul>
-    <!-- <button @click="navigateToAdd">Add New Item</button> -->
+
   </div>
 </template>
 
 <script setup>
 import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useProgressStore } from '../../stores/progressStore';
+import { useProjectStore } from '../../stores/projectStore';
 
-const progressStore = useProgressStore();
+const projectStore = useProjectStore();
 const router = useRouter();
-const items = computed(() => progressStore.items);
+const projects = computed(() => projectStore.projects);
 
 onMounted(async () => {
-  if (!items.value.length) {
-    await progressStore.fetchItems();
-  }
+  await projectStore.fetchProjects();
 });
 
 const navigateToAdd = () => {
-  router.push('/addTodo');
+  router.push('/addProject');
 };
 
 const navigateToEdit = (id) => {
-  router.push(`/editTodo/${id}`);
+  console.log("id:", id)
+  router.push(`/editProject/${id}`);
 };
 
 const navigateToView = (id) => {
-  router.push(`/viewTodo/${id}`);
+  console.log("id:", id)
+  router.push(`/viewProject/${id}`);
 };
 </script>
 
 
 <style>
 /* Container for the ordered list */
-ol.todo-list {
+ol.project-list {
   list-style-type: none;
   padding: 0;
   margin: 0;
   counter-reset: item;
 }
 
-.todo-list li {
+.project-list li {
   display: flex;
   align-items: center;
   padding: 10px;
@@ -63,7 +66,7 @@ ol.todo-list {
   counter-increment: item;
 }
 
-.todo-list li::before {
+.project-list li::before {
   content: counter(item) ".";
   margin-right: 10px;
   font-weight: bold;
@@ -125,13 +128,13 @@ ol.todo-list {
   font-weight: normal;
 }
 
-.add-todo {
+.add-project {
   display: flex;
   align-items: center;
   margin-bottom: 1em;
 }
 
-.add-todo input {
+.add-project input {
   flex-grow: 1;
   margin-right: 1em;
   white-space: nowrap;
@@ -151,18 +154,18 @@ ol.todo-list {
 
 /* Mobile-specific styles */
 @media (max-width: 600px) {
-  .add-todo {
+  .add-project {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .add-todo input[name="inputTodoElement"] {
+  .add-project input[name="inputprojectElement"] {
     width: 100%;
     margin-right: 0;
     margin-bottom: 0.5em;
   }
 
-  .add-todo input[name="inputCategoryElement"],
+  .add-project input[name="inputCategoryElement"],
   .btn-add {
     width: 100%;
   }
