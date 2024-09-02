@@ -1,9 +1,8 @@
 <template>
   <div class="projects-container">
-    <h2>Projects List</h2>
-    <!-- Button to navigate to add a new project -->
+    <h2>Costs List</h2>
     <button class="btn-add-project" @click="navigateToAdd">
-      <span class="material-symbols-outlined">add_circle</span> Add Project
+      <span class="material-symbols-outlined">add_circle</span> Add Cost
     </button>
 
     <div class="project-cards">
@@ -88,15 +87,15 @@ onMounted(async () => {
 
 // Navigation functions
 const navigateToAdd = () => {
-  router.push('/addProject');
+  router.push('/addCost');
 };
 
 const navigateToEdit = (id) => {
-  router.push(`/editProject/${id}`);
+  router.push(`/editCost/${id}`);
 };
 
 const navigateToView = (id) => {
-  router.push(`/viewProject/${id}`);
+  router.push(`/viewCost/${id}`);
 };
 
 // Method to determine the class for status styling

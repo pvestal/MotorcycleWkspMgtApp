@@ -5,6 +5,6 @@
   </template>
   
   <script setup>
-  import TaskForm from './TaskForm.vue';
+  import TaskForm from './CostForm.vue';
   </script>
   

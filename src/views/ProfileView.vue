@@ -1,6 +1,6 @@
 <template>
   <div v-if="userProfile" class="profile-container">
-    <h2>User Profile</h2>
+    <h1>User Profile</h1>
     <button @click="logout"><span class="material-symbols-outlined">logout</span></button>
     <div class="profile-user-email"><span class="material-symbols-outlined">email</span> {{ userProfile.email }}</div>
     <img :src="userProfile.photoURL" alt="User Photo" />

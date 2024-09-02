@@ -1,23 +1,28 @@
 import { defineStore } from 'pinia';
 import { useErrorStore } from './errorStore';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useUserStore } from './userStore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../fbConfig';
 
-export const usetaskStore = defineStore('taskStore', {
+export const useTaskStore = defineStore('taskStore', {
     state: () => ({
         tasks: [],
     }),
     getters: {
-        getTasksByProjectId: (state) => (projectId) => state.tasks[projectId] || [],
+        getTasksByProjectId: (state) => (projectId) => state.tasks.filter(task => task.projectId === projectId),
         highPriorityTasks: (state) => {
             return state.tasks.filter(task => task.priority === 'High');
         },
         completedTasks: (state) => {
             return state.tasks.filter(task => task.status === 'Completed');
         },
+        getTotalNbrHrsByProjectId: (state) => (projectId) => {
+            const tasks = state.tasks.filter(task => task.projectId === projectId);
+            return tasks.reduce((total, task) => total + (task.NbrHrs || 0), 0);
+          },
     },
     actions: {
-        async fetchtasks() {
+        async fetchTasks() {
             const errorStore = useErrorStore();
             try {
                 const querySnapshot = await getDocs(collection(db, "tasks"));
@@ -26,73 +31,94 @@ export const usetaskStore = defineStore('taskStore', {
                     ...doc.data(),
                 }));
             } catch (err) {
-                errorStore.showError(err)
+                errorStore.showError(err);
             } finally {
-                console.log("fetchtasks called")
+                console.log("fetchtasks called");
             }
         },
-        async addtask(task) {
+        async addTask(task) {
             const errorStore = useErrorStore();
+            const userStore = useUserStore();
+            const currentUser = await userStore.currentUser;
+        
+            if (!currentUser) {
+                errorStore.showError("Must be logged in to add a task.");
+                return;
+            }
+        
             try {
-                const docRef = await addDoc(collection(db, "tasks"), task);
+                const createdBy = {
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName,
+                    photoURL: currentUser.photoURL || "default",
+                    role: currentUser.role,
+                    userStatus: currentUser.userStatus,
+                };
+        
                 const taskData = {
-                    id: docRef.id,
-                    projectId: task.projectId,
+                    ...task,
+                    projectId: task.projectId, // Ensure this is passed correctly when calling addTask
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now(),
-                    createdBy: {
-                      uid: currentUser.uid,
-                      displayName: currentUser.displayName,
-                      photoURL: currentUser.photoURL || 'default-url',
-                      role: currentUser.role,
-                      userStatus: currentUser.userStatus
-                    },
-                    updatedBy: { ...taskData.createdBy },
-                }
-                this.tasks.push({ id: taskData.id, ...taskData });
+                    createdBy: createdBy,
+                    updatedBy: createdBy,
+                };
+        
+                const docRef = await addDoc(collection(db, "tasks"), taskData);
+                taskData.id = docRef.id;  // Set the ID in the taskData object after the document is created
+        
+                // Optional: If you want to ensure the ID is saved in Firestore
+                await updateDoc(docRef, { id: taskData.id });
+        
+                this.tasks.push(taskData);  // Add the task to the local state
             } catch (err) {
-                errorStore.showError(err)
+                errorStore.showError(err.message);
             } finally {
-                console.log("addtask called")
+                console.log("addTask called");
             }
         },
-        async updatetask(id, updatedTask) {
+
+        async updateTask(id, updatedTask) {
             const errorStore = useErrorStore();
             try {
                 const taskDoc = doc(db, "tasks", id);
+                updatedTask.updatedAt = Timestamp.now(); // Update the timestamp when the task is modified
+        
                 await updateDoc(taskDoc, updatedTask);
+        
                 const index = this.tasks.findIndex((task) => task.id === id);
                 if (index !== -1) {
                     this.tasks[index] = { id, ...updatedTask };
                 }
             } catch (err) {
-                errorStore.showError(err)
+                errorStore.showError(err.message);
             } finally {
-                console.log("task updated")
+                console.log("task updated");
             }
         },
-        async removeTask(id) {
-           
+        async deleteTask(id) {
             try {
                 await deleteDoc(doc(db, "tasks", id));
                 this.tasks = this.tasks.filter((task) => task.id !== id);
             } catch (err) {
                 this.error = err.message;
             } finally {
-                console.log("task deleted")
+                console.log("task deleted");
             }
         },
         async fetchTasksByProjectId(projectId) {
-        const errorStore = useErrorStore();
-        try {
-          if (!this.tasks[projectId]) {
-            const q = query(collection(db, 'costs'), where('projectId', '==', projectId));
-            const querySnapshot = await getDocs(q);
-            this.costs[projectId] = querySnapshot.docs.map(doc => doc.data());
-          }
-        } catch (error) {
-          errorStore.showError("An error occurred fetching costs: " + error.message);
-        }
-      },
+            const errorStore = useErrorStore();
+            try {
+                const q = query(collection(db, 'tasks'), where('projectId', '==', projectId));
+                const querySnapshot = await getDocs(q);
+                // this.tasks = querySnapshot.docs.map(doc => ({
+                //     id: doc.id,
+                //     ...doc.data(),
+                // }));
+                this.tasks = querySnapshot.docs.map(doc => doc.data());
+            } catch (error) {
+                errorStore.showError("An error occurred fetching tasks: " + error.message);
+            }
+        },
     },
 });

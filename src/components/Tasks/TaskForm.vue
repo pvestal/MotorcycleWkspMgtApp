@@ -1,96 +1,133 @@
 <template>
-  <div>
-    <!-- Toggle Button -->
-    <button class="btn-toggle" @click="toggleForm">
-      {{ showForm ? 'Hide Form' : 'Show Form' }}
-    </button>
+  <div class="task-form-container">
+    <h2>{{ isEditing ? 'Edit Task' : 'Add Task' }} 
+      <span v-if="props.projectName"> - Project: {{ props.projectName }}</span>
+      <br>
+      <span>toggle</span>
+    </h2>
+    <form @submit.prevent="handleTaskSubmit">
 
-    <!-- Form Container (Visible based on showForm state) -->
-    <div v-if="showForm" class="form-container">
-      <!-- <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2> -->
-      <form @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label for="priority">Priority:</label>
-          <select v-model="item.priority" id="priority" class="form-control">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="status">Status:</label>
-          <select v-model="item.status" id="status" class="form-control">
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Completed</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="itemTitle">Item Title:</label>
-          <input type="text" v-model="item.itemTitle" id="itemTitle" class="form-control" required maxlength="255" />
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Item</button>
-          <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
-        </div>
-      </form>
-    </div>
+      <div class="form-group">
+        <label for="taskTitle">Task Title:</label>
+        <input type="text" v-model="taskData.taskTitle" id="taskTitle" class="form-control" required />
+      </div>
+      <div class="form-group">
+        <label for="priority">Priority:</label>
+        <select v-model="taskData.priority" id="priority" class="form-control">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="status">Status:</label>
+        <select v-model="taskData.status" id="status" class="form-control">
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="nbrHrs">Time: (number of hours)</label>
+        <input type="number" v-model="taskData.nbrHrs" id="nbrHrs" class="form-control" required />
+      </div>
+      <!-- <div class="form-group">
+        <label for="notes">Notes:</label>
+        <textarea v-model="taskData.notes" id="notes" class="form-control"></textarea>
+      </div> -->
+      <NoteForm :projectId="projectId" :projectName="projectName" class="form-control" />
+      <div class="form-actions">
+        <button type="submit" class="btn-submit">{{ isEditing ? 'Update Task' : 'Add Task' }}</button>
+        <button type="button" class="btn-cancel" @click="cancelTaskEdit">Cancel</button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { usetaskStore } from '../../stores/taskStore';
-import { useErrorStore } from '../../stores/errorStore';
+import { useTaskStore } from '@/stores/taskStore';
+import { useErrorStore } from '@/stores/errorStore';
+import { useRouter } from 'vue-router';
+import NoteForm from '../Projects/NoteForm.vue';
 
-const taskStore = usetaskStore();
-const errorStore = useErrorStore();
 const router = useRouter();
-const route = useRoute();
+const taskStore = useTaskStore();
+const errorStore = useErrorStore();
 
-const item = ref({ priority: 'Medium', status: 'Pending', itemTitle: '' });
+const props = defineProps({
+  project: {
+    type: Object,
+    required: true,
+  },
+  projectId: {
+    type: String,
+    required: true,
+  },
+  taskId: {
+    type: String,
+    default: null,
+  },
+});
+
+const taskData = ref({
+  taskTitle: '',
+  priority: 'Medium',
+  status: 'Pending',
+  nbrHrs: 1,
+  notes: '',
+  projectId: props.projectId,
+});
+
 const isEditing = ref(false);
-const showForm = ref(false); // State to control form visibility
 
 onMounted(() => {
-  if (route.params.id) {
+  if (props.taskId) {
     isEditing.value = true;
-    const existingItem = taskStore.items.find(i => i.id === route.params.id);
-    if (existingItem) {
-      item.value = { ...existingItem };
-      showForm.value = true; // Automatically show the form when editing
+    const existingTask = taskStore.getTaskById(props.taskId);
+    if (existingTask) {
+      taskData.value = { ...existingTask };
     } else {
-      errorStore.showError("Item not found");
-      router.push('/progress');
+      errorStore.showError("Task not found");
     }
   }
 });
 
-const handleSubmit = async () => {
+const handleTaskSubmit = async () => {
   try {
     if (isEditing.value) {
-      await taskStore.updateItem(route.params.id, item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
+      await taskStore.updateTask(props.taskId, taskData.value);
     } else {
-      await taskStore.addItem(item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
+      await taskStore.addTask(taskData.value);
     }
-    router.push('/tasks');
+    clearTaskData();
+    router.push(`/viewProject/${props.projectId}`);
   } catch (error) {
-    errorStore.showError(error.message || "An unexpected error occurred");
+   errorStore.showError('An error occurred:', error);
   }
 };
 
-const cancelEdit = () => {
-  router.push('/tasks');
+
+  const cancelTaskEdit = () => {
+  clearTaskData();
+  emit('cancel-task');
+  router.push(`/viewProject/${props.projectId}`);
 };
 
-const toggleForm = () => {
-  showForm.value = !showForm.value;
+const clearTaskData = () => {
+  taskData.value = {
+    taskTitle: '',
+    priority: 'Medium',
+    status: 'Pending',
+    nbrHrs: 1,
+    notes: '',
+    projectId: props.projectId,
+  };
+  isEditing.value = false;
 };
+
 </script>
+
 
 <style scoped>
 /* Toggle Button Styles */

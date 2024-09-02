@@ -10,28 +10,31 @@
     <!-- Sidebar -->
     <aside :class="{ 'sidebar-open': sidebarOpen }" class="sidebar">
       <div class="sidebar-content">
-                <!-- If user is not registered show sidebar links -->
+        <!-- If user is not logged in, show public sidebar links -->
         <ul v-if="!loggedIn" class="nav-links">
           <li @click="navigate('/')"><span class="material-symbols-outlined">home</span> Home</li>
           <li @click="navigate('/about')"><span class="material-symbols-outlined">info</span> About Us</li>
           <li @click="navigate('/login')"><span class="material-symbols-outlined">login</span> Login/Register</li>
         </ul>
+
+        <!-- If user is logged in, show profile section and user-specific links -->
         <div v-if="loggedIn" class="profile-section" @click="navigate('/profile')">
-          <img :src="user.photoURL" alt="User Avatar" class="profile-avatar" />
+          <img :src="user.photoURL || avatarURL" alt="User Avatar" class="profile-avatar" />
           <h3 v-if="user.displayName"><span class="material-symbols-outlined">person</span> {{ user.displayName }}</h3>
           <p v-if="user.email"><span class="material-symbols-outlined">email</span> {{ user.email }}</p>
           <p v-if="user.role"><span class="material-symbols-outlined">build</span> {{ user.role }}</p>
         </div>
-        <!-- If user is registered show sidebar links -->
+        
         <ul v-if="loggedIn" class="nav-links">
           <li @click="navigate('/')"><span class="material-symbols-outlined">home</span> Home</li>
           <li @click="navigate('/profile')"><span class="material-symbols-outlined">account_box</span> Profile</li>
-          <li @click="navigate('/login')"><span class="material-symbols-outlined">logout</span> Logout</li>
+          <li @click="handleLogout"><span class="material-symbols-outlined">logout</span> Logout</li>
         </ul>
-        <!-- If user is admin show sidebar links -->
-        <ul class="nav-links">
+
+        <!-- Admin-specific links -->
+        <ul v-if="isAdmin" class="nav-links">
           <li><span class="material-symbols-outlined">key</span> Reserved</li>
-          <li @click="navigate('/users')"><span class="material-symbols-outlined">manage_accounts</span> User Mgt</li>
+          <li @click="navigate('/users')"><span class="material-symbols-outlined">manage_accounts</span> User Management</li>
           <li @click="navigate('/tasks')"><span class="material-symbols-outlined">menu</span> Tasks</li>
           <li @click="navigate('/projects')"><span class="material-symbols-outlined">emoji_objects</span> Projects</li>
           <li @click="navigate('/costs')"><span class="material-symbols-outlined">paid</span> Costs</li>
@@ -48,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { auth } from '../fbConfig';
 import { useUserStore } from '@/stores/userStore';
@@ -56,12 +59,22 @@ import { useUserStore } from '@/stores/userStore';
 const router = useRouter();
 const userStore = useUserStore();
 
-const loggedIn = ref(userStore.isAuthenticated);
-const isAdmin = ref(userStore.isAdmin); 
 const sidebarOpen = ref(false);
 
-const user = ref(null); 
-const avatarURL = ref(""); // Variable to hold the random avatar URL
+const props = defineProps({
+  projectId: {
+    type: String,
+    required: false,
+  },
+});
+
+// Computed properties for reactivity
+const loggedIn = computed(() => userStore.isAuthenticated);
+const isAdmin = computed(() => userStore.isAdmin);
+
+// Reactive references
+const user = ref(null);
+const avatarURL = ref("");
 
 // Function to fetch a random avatar URL
 const fetchRandomAvatar = () => {
@@ -69,11 +82,11 @@ const fetchRandomAvatar = () => {
   avatarURL.value = `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}&radius=50`;
 };
 
-// Fetch user data from Firestore based on authenticated user
+// Function to load user profile
 const loadUserProfile = async () => {
   const currentUser = auth.currentUser;
   if (currentUser) {
-    await userStore.fetchUser();  
+    await userStore.fetchUser();
     user.value = userStore.currentUser;
   }
 
@@ -87,32 +100,38 @@ onMounted(() => {
   loadUserProfile();
 });
 
+// Toggle sidebar visibility
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value;
 };
 
+// Navigate to a specific route and close the sidebar
 const navigate = (path) => {
   router.push(path).then(() => {
     sidebarOpen.value = false;
   });
 };
 
-watch(() => userStore.isAuthenticated, (newVal) => {
-  loggedIn.value = newVal;
-  if (!newVal) {
-    fetchRandomAvatar(); // Fetch a new random avatar when user logs out
+// Handle logout functionality
+const handleLogout = async () => {
+  try {
+    await userStore.logout();
+    sidebarOpen.value = false;
+    navigate('/login');
+  } catch (error) {
+    console.error("Logout failed:", error);
+    // Optionally, display an error message to the user
   }
-});
+};
 
+// Watch for changes in the currentUser to update the avatar if necessary
 watch(() => userStore.currentUser, (newUser) => {
   user.value = newUser;
   if (!newUser?.photoURL) {
-    fetchRandomAvatar(); // Set random avatar for anonymous or non-photo users
+    fetchRandomAvatar();
   }
 });
 </script>
-
-
 
 <style scoped>
 /* Navbar styles */
@@ -196,6 +215,12 @@ watch(() => userStore.currentUser, (newUser) => {
   cursor: pointer;
   border-bottom: 1px solid #4a5568;
   transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.nav-links li span.material-symbols-outlined {
+  margin-right: 8px;
 }
 
 .nav-links li:hover {

@@ -6,22 +6,39 @@
       <p><strong>Owner:</strong> {{ project.owner }}</p>
       <p><strong>Start Date:</strong> {{ formatDate(project.startDate) }}</p>
       <p v-if="project.endDate"><strong>End Date:</strong> {{ formatDate(project.endDate) }}</p>
-      <p><strong>Notes:</strong> {{ project.notes }}</p>
     </div>
 
+    <!-- Tasks Section with Toggle -->
     <section class="project-section">
-      <ListTasks :projectId="projectId" />
+      <div class="section-header">
+        <h2>Tasks</h2>
+        <span class="material-symbols-outlined" @click="toggleSection('tasksVisible')">
+          {{ tasksVisible ? 'expand_less' : 'expand_more' }}
+        </span>
+      </div>
+      <ListTasks v-if="tasksVisible" :projectId="route.params.id" />
     </section>
 
+    <!-- Parts Section with Toggle -->
     <section class="project-section">
-      <p>Parts</p>
-      <!-- <PartList :projectId="projectId" /> -->
+      <div class="section-header">
+        <h2>Parts</h2>
+        <span class="material-symbols-outlined" @click="toggleSection('partsVisible')">
+          {{ partsVisible ? 'expand_less' : 'expand_more' }}
+        </span>
+      </div>
+      <PartList v-if="partsVisible" :projectId="route.params.id" />
     </section>
 
-    <!-- Optional Time Tracking Section -->
+    <!-- Costs Section with Toggle -->
     <section class="project-section">
-      <p>Time</p>
-      <!-- <TimeEntryList :projectId="projectId" /> -->
+      <div class="section-header">
+        <h2>Costs</h2>
+        <span class="material-symbols-outlined" @click="toggleSection('costsVisible')">
+          {{ costsVisible ? 'expand_less' : 'expand_more' }}
+        </span>
+      </div>
+      <CostList v-if="costsVisible" :projectId="route.params.id" />
     </section>
   </div>
 </template>
@@ -31,13 +48,33 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/projectStore';
 import ListTasks from '@/components/Tasks/ListTasks.vue';
-// import PartList from '@/components/PartList.vue';
-// import TimeEntryList from '@/components/TimeEntryList.vue'; 
+import PartList from '@/components/Parts/ListParts.vue';
+import CostList from '@/components/Costs/ListCosts.vue';
 
 const route = useRoute();
 const projectStore = useProjectStore();
 const projectId = ref(route.params.id);
 const project = ref({});
+
+// Section visibility states
+const tasksVisible = ref(true);
+const partsVisible = ref(true);
+const costsVisible = ref(true);
+
+// Function to toggle section visibility
+const toggleSection = (section) => {
+  switch (section) {
+    case 'tasksVisible':
+      tasksVisible.value = !tasksVisible.value;
+      break;
+    case 'partsVisible':
+      partsVisible.value = !partsVisible.value;
+      break;
+    case 'costsVisible':
+      costsVisible.value = !costsVisible.value;
+      break;
+  }
+};
 
 onMounted(async () => {
   await projectStore.fetchProjects();
@@ -78,34 +115,23 @@ const formatDate = (date) => {
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.material-symbols-outlined {
+  cursor: pointer;
+  font-size: 24px;
+  color: #007bff;
+}
+
+.material-symbols-outlined:hover {
+  color: #0056b3;
+}
+
 .project-section + .project-section {
   margin-top: 40px;
 }
 </style>
-
-  
-  <!-- <script setup>
-  import { ref, onMounted } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { useProjectStore } from '../../stores/projectStore';
-  import { useErrorStore } from '../../stores/errorStore';
-  
-  const route = useRoute();
-  const router = useRouter();
-  const projectStore = useProjectStore();
-  const errorStore = useErrorStore();
-  const project = ref(null);
-  
-  onMounted(() => {
-    const ProjectId = route.params.id;
-    project.value = projectStore.projects.find(i => i.id === ProjectId);
-    if (!project.value) {
-      errorStore.showError("err finding project by Id.")
-    }
-  });
-  
-  const goBack = () => {
-    router.push('/projects');
-  };
-  </script>
-   -->

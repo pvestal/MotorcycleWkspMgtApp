@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
 
 import HomeView from '@/views/HomeView.vue';
 import AboutView from '@/views/AboutView.vue';
@@ -7,7 +8,7 @@ import ProfileView from '@/views/ProfileView.vue';
 import UserManagement from '@/components/Users/UserManagement.vue';
 import EditUser from '@/components/Users/EditUser.vue';
 
-import TaskView from '@/views/TaskView.vue';
+import TasksView from '@/views/TasksView.vue';
 import AddTask from '@/components/Tasks/AddTask.vue';
 import EditTask from '@/components/Tasks/EditTask.vue';
 import ViewTask from '@/components/Tasks/ViewTask.vue';
@@ -17,7 +18,11 @@ import EditProject from '@/components/Projects/EditProject.vue';
 import ViewProject from '@/components/Projects/ViewProject.vue';
 import ListProjects from '@/components/Projects/ListProjects.vue';
 
-import { useUserStore } from '@/stores/userStore';
+import ListParts from '@/components/Parts/ListParts.vue';
+import AddPart from '@/components/Parts/AddPart.vue';
+import EditPart from '@/components/Parts/EditPart.vue';
+import ViewPart from '@/components/Parts/ViewPart.vue';
+
 
 const routes = [
   { path: '/', name: 'HomeView', component: HomeView },
@@ -29,7 +34,7 @@ const routes = [
   { path: '/editUser/:id', name: 'EditUser', component: EditUser, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   // { path: '/viewUser/:id', name: 'ViewUser', component: View, props: true },
 
-  { path: '/tasks', name: 'Tasks', component: TaskView, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/tasks', name: 'Tasks', component: TasksView, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/addTask', name: 'AddTask', component: AddTask, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editTask/:id', name: 'EditTask', component: EditTask, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/viewTask/:id', name: 'ViewTask', component: ViewTask, props: true, meta: { requiresAuth: true,  }},
@@ -38,6 +43,11 @@ const routes = [
   { path: '/addProject', name: 'addProject', component: AddProject, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editProject/:id', name: 'editProject', component: EditProject, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/viewProject/:id', name: 'viewProject', component: ViewProject, props: true, meta: { requiresAuth: true,  }},
+
+  { path: '/parts', name: 'listParts', component: ListParts, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/addPart', name: 'addPart', component: AddPart, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/editPart/:id', name: 'editPart', component: EditPart, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/viewPart/:id', name: 'viewPart', component: ViewPart, props: true, meta: { requiresAuth: true,  }},
 
 
 

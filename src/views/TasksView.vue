@@ -1,19 +1,28 @@
 <template>
     <div>
-        <TaskForm/>
-        <h1>App progress log..</h1>
-        <ListTasks v-if="tasks"/>
+      <h1>Tasks for Projects</h1>
+      <div v-for="project in projects" :key="project.projectId">
+        <h2>{{ project.projectName }}</h2>
+        <ListTasks :projectId="project.projectId" />
+      </div>
     </div>
-</template> 
+  </template>
+  
+  <script setup>
+  import { onMounted, ref } from 'vue';
+  import ListTasks from '../components/Tasks/ListTasks.vue';
+  import { useProjectStore } from '@/stores/projectStore';
+  
+  const projectStore = useProjectStore();
+  const projects = ref([]);
+  
+  onMounted(async () => {
+    await projectStore.fetchProjects();
+    projects.value = projectStore.projects;
+  });
+  </script>
 
-<script setup>
-import TaskForm from '../components/Tasks/TaskForm.vue';
-import ListTasks from '../components/Tasks/ListTasks.vue';
-
-</script>
-
-<style>
-
+<style scoped>
 /* Container for the ordered list */
 ol.task-list {
     list-style-type: none;

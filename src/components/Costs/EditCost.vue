@@ -1,10 +1,10 @@
 <template>
     <div>
-      <TaskForm />
+      <CostForm/>
     </div>
   </template>
   
   <script setup>
-  import TaskForm from './TaskForm.vue';
+  import CostForm from './CostForm.vue';
   </script>
   

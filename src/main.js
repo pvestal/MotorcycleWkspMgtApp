@@ -13,26 +13,19 @@ app.use(router);
 
 const auth = getAuth();
 
-function handleUserStateChange(user) {
+onAuthStateChanged(auth, async (user) => {
   const userStore = useUserStore();
 
   if (user) {
-    // If a user is logged in, set the user state
-    userStore.setUser({
-      uid: user.uid,
-      displayName: user.displayName || 'Anonymous',
-      email: user.email || 'unknown@unknown.com',
-      photoURL: user.photoURL || '',
-      role: user.role || 'customer',
-      userStatus: user.userStatus || 'active',
-    });
+    const isAnonymous = user.isAnonymous;
+    if (isAnonymous) {
+      await userStore.loginAnonymously();
+    } else {
+      await userStore.fetchUser();
+    }
   } else {
-    // If no user is logged in, initiate anonymous login
-    userStore.loginAnonymously();
+    await userStore.loginAnonymously();
   }
-}
-
-// Handle user authentication state globally
-onAuthStateChanged(auth, handleUserStateChange);
+});
 
 app.mount('#app');

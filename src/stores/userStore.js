@@ -4,7 +4,7 @@ import { collection, getDocs, setDoc, doc, getDoc, query, updateDoc, Timestamp }
 import { useErrorStore } from "./errorStore";
 import router from "../router";
 import { logEvent } from 'firebase/analytics';
-import { linkWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { linkWithCredential, GoogleAuthProvider, getAuth, onAuthStateChanged } from "firebase/auth";
 
 // Function to generate a random avatar URL using DiceBear
 const generateAvatarURL = (gender) => {
@@ -37,8 +37,8 @@ export const useUserStore = defineStore({
       }
 
       try {
-        const existingUserIndex = this.users?.findIndex(u => u.uid === user.uid);
-        if (existingUserIndex !== -1 && existingUserIndex !== null) {
+        const existingUserIndex = this.users.findIndex(u => u.uid === user.uid);
+        if (existingUserIndex !== -1) {
           this.users[existingUserIndex] = user;
         } else {
           this.users.push(user);
@@ -57,17 +57,18 @@ export const useUserStore = defineStore({
       const errorStore = useErrorStore();
       try {
         const result = await signInWithPopup(auth, googleProvider);
-
-        if (this.isAnonymous) {
-          const credential = GoogleAuthProvider.credential(result.user.getAuthResponse().id_token);
+    
+        if (auth.currentUser.isAnonymous) {
+          // If the user is currently anonymous, link their account to the Google credentials
+          const credential = GoogleAuthProvider.credential(result.user.accessToken);
           await linkWithCredential(auth.currentUser, credential);
         }
-
+    
         const userRef = doc(db, "users", result.user.uid);
         const userDoc = await getDoc(userRef);
-
+    
         let userData;
-
+    
         if (!userDoc.exists()) {
           userData = {
             uid: result.user.uid,
@@ -80,7 +81,7 @@ export const useUserStore = defineStore({
             updatedAt: Timestamp.now(),
             createdAt: Timestamp.now(),
           };
-
+    
           await setDoc(userRef, userData);
         } else {
           userData = {
@@ -90,14 +91,14 @@ export const useUserStore = defineStore({
           };
           await updateDoc(userRef, { lastLoginAt: Timestamp.now(), updatedAt: Timestamp.now() });
         }
-
+    
         this.setUser(userData);
         logEvent(analytics, 'login', { method: 'Google' });
-        router.push('/profile');
+        // router.push('/tasks');
       } catch (error) {
         errorStore.showError("An error occurred during login: " + error.message);
       }
-    },
+    },    
     async loginAnonymously() {
       const errorStore = useErrorStore();
       try {
@@ -136,6 +137,7 @@ export const useUserStore = defineStore({
         errorStore.showError("An error occurred during anonymous login: " + error.message);
       }
     },
+
     async fetchUser() {
       const errorStore = useErrorStore();
       try {
@@ -146,18 +148,14 @@ export const useUserStore = defineStore({
           const userDoc = await getDoc(userRef);
     
           if (userDoc.exists()) {
-            console.log("User found in database. Setting user.");
-            this.setUser(userDoc.data()); // Assuming setUser takes the user's data from Firestore
+            this.setUser(userDoc.data());
           } else {
-            console.log("No user found in database. Logging in anonymously.");
             await this.loginAnonymously(); 
           }
         } else {
-          console.log("No authenticated user found. Clearing user state.");
           this.clearUser();
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
         errorStore.showError("An error occurred while fetching the user: " + error.message);
       }
     },    
@@ -225,6 +223,7 @@ export const useUserStore = defineStore({
         errorStore.showError("An error occurred deleting the user: " + error.message);
       }
     },
+
     async logout() {
       const errorStore = useErrorStore();
       try {
@@ -234,6 +233,16 @@ export const useUserStore = defineStore({
       } catch (error) {
         errorStore.showError("An error occurred during logout: " + error.message);
       }
+    },
+    setUpAuthListener() {
+      const auth = getAuth();
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          this.setUser(user);
+        } else {
+          this.clearUser();
+        }
+      });
     },
   },
 });

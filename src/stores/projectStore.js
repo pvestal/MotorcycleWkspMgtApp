@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
 import { db, auth } from '@/fbConfig'; // Firestore and Auth configuration
-import { collection, doc, setDoc, getDoc, updateDoc, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
 import { useErrorStore } from './errorStore';
+import { useUserStore } from './userStore';
 
 export const useProjectStore = defineStore('projectStore', {
   state: () => ({
     projects: [],
+    selectedProject: null,
   }),
   getters: {
     // Retrieve a project by its ID
@@ -24,10 +26,18 @@ export const useProjectStore = defineStore('projectStore', {
         errorStore.showError('Error fetching projects: ' + error.message);
       }
     },
-
+    async fetchProjectById(projectId) {
+      const projectDoc = doc(db, 'projects', projectId);
+      const projectSnapshot = await getDoc(projectDoc);
+      if (projectSnapshot.exists()) {
+        this.selectedProject = projectSnapshot.data();
+        await this.fetchNoteHistory(projectId);
+      }
+    },
     // Add a new project to Firestore
     async addProject(projectData) {
       const errorStore = useErrorStore();
+      const userStore = useUserStore();
       try {
         const currentUser = auth.currentUser; // Get the current authenticated user
         if (!currentUser) throw new Error('No user is currently logged in.');
@@ -39,9 +49,9 @@ export const useProjectStore = defineStore('projectStore', {
         projectData.createdBy = {
           uid: currentUser.uid,
           displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL || '',
-          role: currentUser.role,
-          userStatus: currentUser.userStatus,
+          photoURL: currentUser.photoURL || userStore.generateAvatarURL(),
+          role: currentUser.role || 'admin',
+          userStatus: currentUser.userStatus || 'active',
         };
         projectData.updatedBy = { ...projectData.createdBy };
 
@@ -64,8 +74,6 @@ export const useProjectStore = defineStore('projectStore', {
           uid: currentUser.uid,
           displayName: currentUser.displayName,
           photoURL: currentUser.photoURL,
-          role: currentUser.role,
-          userStatus: currentUser.userStatus,
         };
 
         await updateDoc(projectRef, updatedData);
@@ -87,6 +95,33 @@ export const useProjectStore = defineStore('projectStore', {
       } catch (error) {
         errorStore.showError('Error deleting project: ' + error.message);
       }
+    },
+
+    async fetchNoteHistory(projectId) {
+      const notesCollection = collection(db, 'projects', projectId, 'noteChanges');
+      const noteSnapshots = await getDocs(notesCollection);
+      this.noteHistory = noteSnapshots.docs.map(doc => doc.data());
+    },
+
+    async updateNote(projectId, newNote) {
+      const userStore = useUserStore();
+      const currentUser = userStore.currentUser();
+      const projectDoc = doc(db, 'projects', projectId);
+      const previousNote = this.selectedProject.note || '';
+
+      // Save the previous note to the noteChanges sub-collection
+      const notesCollection = collection(db, 'projects', projectId, 'noteChanges');
+      await addDoc(notesCollection, {
+        updatedAt: Timestamp.now(),
+        previousNote,
+        updatedBy: currentUser
+      });
+
+      // Update the main document's note field
+      await updateDoc(projectDoc, { note: newNote });
+
+      // Fetch the updated project and note history
+      await this.fetchProjectById(projectId);
     },
   },
 });
