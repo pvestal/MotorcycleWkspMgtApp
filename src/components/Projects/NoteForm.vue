@@ -26,7 +26,7 @@ const route = useRoute();
 const projectStore = useProjectStore();
 const projectId = route.params.id;
 
-const newNote = ref('');
+const newNote = ref('Type...');
 
 const project = ref({});
 const noteHistory = ref([]);

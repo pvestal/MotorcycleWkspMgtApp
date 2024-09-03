@@ -63,21 +63,28 @@ const costs = ref([]);
 
 // Computed property for projects with task counts and total costs
 const projectsWithTasksAndCosts = computed(() => {
-  return projectStore.projects.map((project) => {
+  const uniqueProjects = new Map();
+
+  projectStore.projects.forEach((project) => {
     const projectTasks = taskStore.getTasksByProjectId(project.projectId);
     const tasksCount = projectTasks.length;
     const totalNbrHrs = projectTasks.reduce((sum, task) => sum + task.NbrHrs, 0);
-    
+
     const projectCosts = costStore.getCostsByProjectId(project.projectId);
     const totalCosts = projectCosts.reduce((sum, cost) => sum + cost.amount, 0);
 
-    return {
-      ...project,
-      tasksCount,
-      totalNbrHrs,
-      totalCosts,
-    };
+    // Avoid adding duplicate projects
+    if (!uniqueProjects.has(project.projectId)) {
+      uniqueProjects.set(project.projectId, {
+        ...project,
+        tasksCount,
+        totalNbrHrs,
+        totalCosts,
+      });
+    }
   });
+
+  return Array.from(uniqueProjects.values()); // Convert back to an array
 });
 
 onMounted(async () => {
@@ -96,11 +103,14 @@ const navigateToEdit = (id) => {
 };
 
 const navigateToView = (id) => {
+  console.log(id)
   router.push(`/viewProject/${id}`);
 };
 
 // Method to determine the class for status styling
 const statusClass = (status) => {
+  if (!status) return ''; // Return an empty string if status is undefined or null
+  
   switch (status.toLowerCase()) {
     case 'in progress':
       return 'status in-progress';
@@ -112,6 +122,7 @@ const statusClass = (status) => {
       return 'status';
   }
 };
+
 </script>
 
 <style scoped>

@@ -48,7 +48,8 @@
       <!-- Notes textarea -->
       <div class="form-group">
         <label for="notes">Notes:</label>
-        <textarea v-model="formData.notes" id="notes" class="form-control"></textarea>
+        <!-- <textarea v-model="formData.notes" id="notes" class="form-control"></textarea> -->
+         <NoteForm :projectId="projectId" />
       </div>
 
       <!-- Form action buttons: Submit and Cancel -->
@@ -90,6 +91,7 @@ import { useErrorStore } from '@/stores/errorStore';
 import TaskForm from '../Tasks/TaskForm.vue';
 import ListTasks from '../Tasks/ListTasks.vue';
 import ListParts from '../Parts/ListParts.vue';
+import NoteForm from './NoteForm.vue';
 
 // Setup the necessary stores and router instances
 const projectStore = useProjectStore();
@@ -114,7 +116,7 @@ const formData = ref({
   endDate: '',
   status: 'In Progress',
   owner: '',
-  notes: '',
+  // notes: '',
   tasks: [],
   parts: [],
   costs: [],
@@ -184,7 +186,7 @@ const clearFormData = () => {
     endDate: '',
     status: 'In Progress',
     owner: '',
-    notes: '',
+    // notes: '',
     imageUrl: '',
   };
   projectTasks.value = [];

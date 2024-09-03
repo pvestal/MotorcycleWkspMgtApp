@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { db, auth } from '@/fbConfig'; // Firestore and Auth configuration
-import { collection, doc, setDoc, updateDoc, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, getDoc, getDocs, deleteDoc, Timestamp } from 'firebase/firestore';
 import { useErrorStore } from './errorStore';
 import { useUserStore } from './userStore';
 

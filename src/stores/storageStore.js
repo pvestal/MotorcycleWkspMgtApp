@@ -1,36 +1,76 @@
 import { defineStore } from 'pinia';
 import { storage, db } from '@/fbConfig';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, addDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { useErrorStore } from './errorStore';
 
 export const useStorageStore = defineStore('storageStore', {
   state: () => ({
     loading: false,
+    imageUrls: [],
   }),
+  getters: {
+    projectImages(state) {
+      return state.imageUrls;
+    },
+  },
   actions: {
-    async uploadProjectPhoto(payload) {
+    async fetchProjectImages(projectId) {
+      const errorStore = useErrorStore();
+      this.loading = true;
+  
+      try {
+        // Fetch project data from Firestore
+        const docRef = doc(db, 'projects', projectId);
+        const docSnap = await getDoc(docRef);
+  
+        if (docSnap.exists()) {
+          const projectData = docSnap.data();
+          if (projectData.imageUrls && projectData.imageUrls.length > 0) {
+            this.imageUrls = projectData.imageUrls;
+          } else {
+            this.imageUrls = [];
+          }
+        } else {
+          throw new Error("Project not found");
+        }
+      } catch (error) {
+        errorStore.showError('An error occurred while fetching project images: ' + error.message);
+        this.imageUrls = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+    async uploadProjectPhoto(file, projectId) {
       const errorStore = useErrorStore();
       this.loading = true;
       let imageUrl = '';
-      let projectId = '';
 
       try {
-        // Add project data to Firestore
+        // Ensure the projectId is available
+        if (!projectId) {
+          throw new Error("Project ID is missing.");
+        }
+
+        // Create the project data object (if it's a new project)
         const projectData = {
-          projectName: payload.project.projectName,
+          projectId,
           createdAt: Timestamp.now(),
         };
 
-        const docRef = await addDoc(collection(db, 'projects'), projectData);
-        projectId = docRef.id;
+        // Add project data to Firestore only if it's a new project
+        const docRef = doc(db, 'projects', projectId);
+
+        if (!docRef.exists) {
+          await setDoc(docRef, projectData); // Assuming you want to add the projectData
+        }
 
         // Upload image to Firebase Storage if image exists
-        if (payload.image) {
-          const fileName = payload.image.name;
+        if (file) {
+          const fileName = file.name;
           const ext = fileName.slice(fileName.lastIndexOf('.'));
           const storageReference = storageRef(storage, `projects/${projectId}${ext}`);
-          const snapshot = await uploadBytes(storageReference, payload.image);
+          const snapshot = await uploadBytes(storageReference, file);
           imageUrl = await getDownloadURL(snapshot.ref);
 
           // Update Firestore document with image URL
@@ -51,4 +91,5 @@ export const useStorageStore = defineStore('storageStore', {
       }
     },
   },
+
 });
