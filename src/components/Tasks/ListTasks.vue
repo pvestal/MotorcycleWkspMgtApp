@@ -1,7 +1,9 @@
 <template>
   <div>
-    <h2>Tasks for Project ID: {{ projectId }} [<span v-if="tasksCount">{{ tasksCount }}</span>]</h2>
-    <h3 v-if="totalNbrHrs">Total Hours: {{ totalNbrHrs }}</h3>
+    <h1 v-if="props.projectName">Name: {{ props.projectName }}</h1>
+    <h2>Tasks for Project ID: {{ props.projectId }}</h2>
+    <p v-if="totalNbrHrs">Total Hours: {{ totalNbrHrs }}</p>
+    <p v-if="tasksCount">Tasks Count: {{ tasksCount }}</p>
     <ul class="task-list">
       <li v-for="task in projectTasks" :key="task.id">
         <span class="task-title">{{ task.taskTitle }}</span>
@@ -14,9 +16,15 @@
           
           <!-- Drop-down menu with action buttons -->
           <div v-if="isDropdownOpen(task.id)" class="dropdown-menu">
-            <button @click="navigateToView(task.id)" class="action-button"><span class="material-symbols-outlined">visibility</span> View</button>
-            <button @click="navigateToEdit(task.id)" class="action-button"><span class="material-symbols-outlined">edit</span> Edit</button>
-            <button @click="deleteTask(task.id)" class="action-button"><span class="material-symbols-outlined">delete</span> Delete</button>
+            <button @click="navigateToView(task.id)" class="action-button">
+              <span class="material-symbols-outlined">visibility</span> View
+            </button>
+            <button @click="navigateToEdit(task.id)" class="action-button">
+              <span class="material-symbols-outlined">edit</span> Edit
+            </button>
+            <button @click="deleteTask(task.id)" class="action-button">
+              <span class="material-symbols-outlined">delete</span> Delete
+            </button>
           </div>
         </div>
       </li>
@@ -26,33 +34,48 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'; // Import useRoute to get projectId from URL
 import { useTaskStore } from '@/stores/taskStore';
 import { useErrorStore } from '@/stores/errorStore';
 
 const taskStore = useTaskStore();
 const errorStore = useErrorStore();
 const router = useRouter();
-
-// Define props
-const props = defineProps({
-  projectId: {
-    type: String,
-    required: true,
-  },
-});
+const route = useRoute(); // Use route to get projectId
 
 // Reactive properties for tasks and calculations
 const projectTasks = ref([]);
 const tasksCount = ref(0);
 const totalNbrHrs = ref(0);
 const openDropdowns = ref({});
+const projectName = ref(''); // For project name
+
+const props = defineProps({
+  projectId: String,
+  projectName: String,
+})
 
 onMounted(async () => {
-  await taskStore.fetchTasks(); // Fetch all tasks from the store
-  projectTasks.value = taskStore.getTasksByProjectId(props.projectId);
-  tasksCount.value = projectTasks.value.length;
-  totalNbrHrs.value = projectTasks.value.reduce((sum, task) => sum + task.NbrHrs, 0);
+  try {
+    await taskStore.fetchTasks(); // Fetch all tasks from the store
+    projectTasks.value = taskStore.getTasksByProjectId(props.projectId);
+    console.log('Fetched tasks:', projectTasks.value); // Log fetched tasks
+
+    tasksCount.value = projectTasks.value.length;
+
+    totalNbrHrs.value = projectTasks.value.reduce((sum, task) => sum + task.NbrHrs, 0);
+
+    // Fetch projectName from the store or parent if needed
+    const project = taskStore.getProjectById(props.projectId);
+    if (project) {
+      projectName.value = project.projectName; // Set projectName based on the fetched project
+    } else {
+      errorStore.showError('Project not found');
+      router.push('/projects'); // Redirect if the project is not found
+    }
+  } catch (error) {
+    errorStore.showError('Error while fetching tasks.');
+  }
 
   document.addEventListener('click', handleClickOutside);
 });
@@ -62,23 +85,21 @@ onBeforeUnmount(() => {
 });
 
 const navigateToEdit = (id) => {
-  console.log(props.projectId)
   router.push(`/editTask/${id}?projectId=${props.projectId}`);
 };
 
 const navigateToView = (id) => {
-  console.log(props.projectId)
   router.push(`/viewTask/${id}?projectId=${props.projectId}`);
 };
 
 const deleteTask = async (id) => {
   try {
     await taskStore.deleteTask(id);
-    projectTasks.value = projectTasks.value.filter(task => task.id !== id);
+    projectTasks.value = projectTasks.value.filter((task) => task.id !== id);
     tasksCount.value = projectTasks.value.length;
     totalNbrHrs.value = projectTasks.value.reduce((sum, task) => sum + task.NbrHrs, 0);
   } catch (error) {
-    errorStore.showError('An error occurred while deleting the task:', error);
+    errorStore.showError('An error occurred while deleting the task.');
   }
 };
 

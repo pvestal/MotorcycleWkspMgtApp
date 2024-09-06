@@ -11,6 +11,16 @@ export const usePartStore = defineStore('partStore', {
     getPartsByProjectId: (state) => (projectId) => state.parts[projectId] || [],
   },
   actions: {
+    // Fetch all projects from Firestore
+    async fetchParts() {
+      const errorStore = useErrorStore();
+      try {
+        const querySnapshot = await getDocs(collection(db, 'parts'));
+        this.parts = querySnapshot.docs.map(doc => doc.data());
+      } catch (error) {
+        errorStore.showError('Error fetching parts: ' + error.message);
+      }
+    },
     // Fetch parts related to a specific project
     async fetchPartsByProjectId(projectId) {
       const errorStore = useErrorStore();

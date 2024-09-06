@@ -39,7 +39,7 @@ export const useProjectStore = defineStore('projectStore', {
       const errorStore = useErrorStore();
       const userStore = useUserStore();
       try {
-        const currentUser = auth.currentUser; // Get the current authenticated user
+        const currentUser = await auth.currentUser; // Get the current authenticated user
         if (!currentUser) throw new Error('No user is currently logged in.');
 
         const projectId = doc(collection(db, 'projects')).id; // Generate a unique ID

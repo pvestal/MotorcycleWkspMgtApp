@@ -111,10 +111,6 @@ export const useTaskStore = defineStore('taskStore', {
             try {
                 const q = query(collection(db, 'tasks'), where('projectId', '==', projectId));
                 const querySnapshot = await getDocs(q);
-                // this.tasks = querySnapshot.docs.map(doc => ({
-                //     id: doc.id,
-                //     ...doc.data(),
-                // }));
                 this.tasks = querySnapshot.docs.map(doc => doc.data());
             } catch (error) {
                 errorStore.showError("An error occurred fetching tasks: " + error.message);

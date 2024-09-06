@@ -26,13 +26,13 @@ const route = useRoute();
 const projectStore = useProjectStore();
 const projectId = route.params.id;
 
-const newNote = ref('Type...');
+const newNote = ref(null);
 
 const project = ref({});
 const noteHistory = ref([]);
 
 onMounted(async () => {
-    await projectStore.getProjectById(projectId);
+    await projectStore.fetchProjectById(projectId);
     project.value = projectStore.selectedProject;
     noteHistory.value = projectStore.noteHistory;
 });

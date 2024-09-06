@@ -1,35 +1,39 @@
 <template>
-  <!-- Main container for the form -->
   <div class="form-container">
-    <!-- Display form title based on the editing state -->
-    <h2>{{ isEditing ? 'Edit Project' : 'Add Project' }}</h2>
+    <!-- Project Name and ID are always visible -->
+    <div class="form-group">
+      <label for="projectName">Project Name:</label>
+      <input type="text" v-model="formData.projectName" id="projectName" class="form-control" required />
+    </div>
 
-    <!-- Form for adding or editing a project -->
-    <form @submit.prevent="handleProjectSave">
-      <!-- Project name input field -->
-      <div class="form-group">
-        <label for="projectName">Project Name:</label>
-        <input type="text" v-model="formData.projectName" id="projectName" class="form-control" required />
+    <div class="form-group inline-group">
+      <p>Project ID: {{ formData.projectId }}</p>
+      <div class="owner-field">
+        <label for="owner">Owner:</label>
+        <input type="text" v-model="formData.owner" id="owner" class="form-control" required />
+      </div>
+    </div>
+
+    <!-- Expand/Collapse button for additional fields -->
+    <div class="expand-toggle">
+      <span class="material-symbols-outlined" @click="toggleSection('mainVisible')">
+        {{ mainVisible ? 'expand_less' : 'expand_more' }} Details
+      </span>
+    </div>
+
+    <!-- Additional form fields hidden when collapsed -->
+    <div v-show="mainVisible" class="additional-fields">
+      <div class="form-group inline-group">
+        <div class="date-field">
+          <label for="startDate">Start Date:</label>
+          <input type="date" v-model="formData.startDate" id="startDate" class="form-control" required />
+        </div>
+        <div class="date-field">
+          <label for="endDate">End Date:</label>
+          <input type="date" v-model="formData.endDate" id="endDate" class="form-control" />
+        </div>
       </div>
 
-      <!-- Project ID display (used for debugging or informational purposes) -->
-      <div class="form-group">
-        <p>ProjectId: {{ formData.projectId}}</p>
-      </div>
-
-      <!-- Start date input field -->
-      <div class="form-group">
-        <label for="startDate">Start Date:</label>
-        <input type="date" v-model="formData.startDate" id="startDate" class="form-control" required />
-      </div>
-
-      <!-- End date input field -->
-      <div class="form-group">
-        <label for="endDate">End Date:</label>
-        <input type="date" v-model="formData.endDate" id="endDate" class="form-control" />
-      </div>
-
-      <!-- Status dropdown menu -->
       <div class="form-group">
         <label for="status">Status:</label>
         <select v-model="formData.status" id="status" class="form-control" required>
@@ -39,47 +43,49 @@
         </select>
       </div>
 
-      <!-- Owner input field -->
-      <div class="form-group">
-        <label for="owner">Owner:</label>
-        <input type="text" v-model="formData.owner" id="owner" class="form-control" required />
-      </div>
-
-      <!-- Notes textarea -->
+      <!-- Notes Section -->
       <div class="form-group">
         <label for="notes">Notes:</label>
-        <!-- <textarea v-model="formData.notes" id="notes" class="form-control"></textarea> -->
-         <NoteForm :projectId="projectId" />
+        <textarea v-model="formData.notes" id="notes" class="form-control"></textarea>
       </div>
+    </div>
 
-      <!-- Form action buttons: Submit and Cancel -->
-      <div class="form-actions">
-        <button type="submit" class="btn-submit">{{ isEditing ? 'Update Project' : 'Add Project' }}</button>
-        <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
-      </div>
-
-    </form>
+    <!-- Action buttons -->
+    <div class="form-actions">
+      <button type="submit" class="btn-submit">{{ isEditing ? 'Update Project' : 'Add Project' }}</button>
+      <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
+    </div>
   </div>
 
-  <!-- Task Management Section, shown only when a project ID exists -->
-  <div v-if="formData.projectId" class="form-container tasks-section">
-      <!-- Toggle icon for showing/hiding the task form -->
-      <span class="material-symbols-outlined" @click="toggleTaskForm">
-        {{ showTaskForm ? 'toggle_on' : 'toggle_off' }}
+  <!-- Task, Parts, Costs Sections -->
+  <div v-if="formData.projectId" class="form-container compact-sections">
+    <!-- Tasks -->
+    <div class="section tasks-section">
+      <span class="material-symbols-outlined" @click="toggleSection('tasksVisible')">
+        {{ tasksVisible ? 'expand_less' : 'expand_more' }} Tasks
       </span>
-    <!-- TaskForm component to add or edit tasks -->
-    <!-- <TaskForm v-if="showTaskForm" :projectId="formData.projectId" @task-saved="fetchProjectTasks" @cancel-task="clearTaskForm" /> -->
+      <TaskForm v-if="tasksVisible" :projectId="formData.projectId" :projectName="formData.projectName" />
+      <ListTasks v-if="tasksVisible" :projectId="formData.projectId" />
+    </div>
 
-    <TaskForm v-if="showTaskForm":projectId="formData.projectId" :projectName="projectName" :taskId="taskId" />
+    <!-- Parts -->
+    <div class="section parts-section">
+      <span class="material-symbols-outlined" @click="toggleSection('partsVisible')">
+        {{ partsVisible ? 'expand_less' : 'expand_more' }} Parts
+      </span>
+      <ListParts v-if="partsVisible && isEditing" :projectId="formData.projectId" />
+    </div>
 
-    <!-- ListTasks component to display tasks associated with the project -->
-    <ListTasks v-if="formData.projectId && isEditing" :projectId="props.projectId" :projectName="projectName" />
+    <!-- Costs -->
+    <div class="section costs-section">
+      <span class="material-symbols-outlined" @click="toggleSection('costsVisible')">
+        {{ costsVisible ? 'expand_less' : 'expand_more' }} Costs
+      </span>
+      <ListCosts v-if="costsVisible && isEditing" :projectId="formData.projectId" />
+    </div>
   </div>
-
-  <!-- Parts List Component -->
-  <ListParts v-if="formData.parts && isEditing" :projectId="props.projectId" :parts="formData.parts || []" @updateParts="updateParts" />
-
 </template>
+
 
 <script setup>
 import { ref, onMounted } from 'vue';
@@ -99,14 +105,7 @@ const taskStore = useTaskStore();
 const errorStore = useErrorStore();
 const router = useRouter();
 const route = useRoute();
-
-// Define props that can be passed to the component
-const props = defineProps({
-  project: Object,
-  projectId: String,
-  projectName: String,
-  taskId: String,
-});
+const project = ref({});
 
 // Setup reactive variables for project data and UI states
 const formData = ref({
@@ -116,21 +115,21 @@ const formData = ref({
   endDate: '',
   status: 'In Progress',
   owner: '',
-  // notes: '',
   tasks: [],
   parts: [],
   costs: [],
   timeEntries: [],
-  imageUrl: '', 
+  imageUrls: [],
 });
 
 const isEditing = ref(false); // Boolean to determine if the form is in editing mode
 const projectTasks = ref([]); // Array to store tasks associated with the project
-const showTaskForm = ref(false); // Boolean to toggle the task form visibility
-const editingTaskId = ref(null); // ID of the task being edited, if any
+const tasksVisible = ref(false); // Boolean to toggle the task form visibility
+const partsVisible = ref(false);
+const costsVisible = ref(false);
+const mainVisible = ref(false); 
 
-const emit = defineEmits(['updateProject', 'addProject',]);
-
+const emit = defineEmits(['updateProject', 'addProject']);
 
 // Initialize the form data and load tasks when the component is mounted
 onMounted(() => {
@@ -157,13 +156,18 @@ const fetchProjectTasks = async () => {
 // Handle the submission of the project form
 const handleProjectSave = async () => {
   try {
+    let savedProject;
+
     if (isEditing.value) {
       await projectStore.updateProject(route.params.id, formData.value);
-      emit('updateProject', props.project);
+      savedProject = { ...formData.value, id: route.params.id }; // Include the ID of the updated project
+      emit('updateProject', savedProject);
     } else {
-      await projectStore.addProject(formData.value);
-      emit('addProject', props.project);
+      const newProjectId = await projectStore.addProject(formData.value);
+      savedProject = { ...formData.value, id: newProjectId }; // Include the ID of the new project
+      emit('addProject', savedProject);
     }
+
     clearFormData();
     router.push('/projects');
   } catch (error) {
@@ -186,43 +190,28 @@ const clearFormData = () => {
     endDate: '',
     status: 'In Progress',
     owner: '',
-    // notes: '',
-    imageUrl: '',
-  };
-  projectTasks.value = [];
-  showTaskForm.value = false;
-  editingTaskId.value = null;
-};
-
-const updateTasks = (updatedTasks) => {
-  emit('updateTasks', updatedTasks);
-};
-
-const updateParts = (updatedParts) => {
-  emit('updateParts', updatedParts);
-};
-
-const updateCosts = (updatedCosts) => {
-  emit('updateCosts', updatedCosts);
-};
-
-const updateTimeEntries = (updatedTimeEntries) => {
-  emit('updateTimeEntries', updatedTimeEntries);
-};
-
-// Function to toggle the visibility of the task form
-const toggleTaskForm = () => {
-  showTaskForm.value = !showTaskForm.value;
-};
-
-// Function to toggle the visibility of the part form
-const togglePartForm = () => {
-  showPartForm.value = !showPartForm.value;
-};
-
-// Function to toggle the visibility of the cost form
-const toggleCostForm = () => {
-  showCostForm.value = !showCostForm.value;
+    tasks: [],
+    parts: [],
+    costs: [],
+    imageUrls: [],
+  }
+}
+// Function to toggle visibility of sections
+const toggleSection = (section) => {
+  switch (section) {
+    case 'tasksVisible':
+      tasksVisible.value = !tasksVisible.value;
+      break;
+    case 'partsVisible':
+      partsVisible.value = !partsVisible.value;
+      break;
+    case 'costsVisible':
+      costsVisible.value = !costsVisible.value;
+      break;
+    case 'mainVisible':
+      mainVisible.value = !mainVisible.value;
+      break;
+  }
 };
 
 </script>
@@ -306,4 +295,59 @@ const toggleCostForm = () => {
 .material-symbols-outlined:hover {
   color: #0056b3;
 }
+
+/* Align items side by side for certain fields */
+.inline-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.date-field,
+.owner-field {
+  flex: 1;
+}
+
+.expand-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.additional-fields {
+  padding: 10px 0;
+  transition: all 0.3s ease;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.compact-sections .section {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* Ensure buttons fit well in compact view */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Animations for expanding/collapsing sections */
+.expand_toggle {
+  cursor: pointer;
+}
+
+.section {
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  overflow: hidden;
+}
+
+.section.collapsed {
+  max-height: 0;
+  padding: 0;
+}
+
 </style>

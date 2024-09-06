@@ -6,7 +6,7 @@
     <img :src="userProfile.photoURL" alt="User Photo" />
     <br>
     <div class="profile-user-role"><span class="material-symbols-outlined">person</span> Role: {{ userProfile.role }}</div>
-    <div class="profile-user-last-login"><span class="material-symbols-outlined">event</span> Last Login: {{ userProfile.lastSignInTime }}</div>
+    <div class="profile-user-last-login"><span class="material-symbols-outlined">event</span> Last Login: {{ formatTimestamp(userProfile.lastLoginAt) }}</div>
 
     <br>
     <userProfileComponent v-if="isAuthenticated" :user="userProfile" />

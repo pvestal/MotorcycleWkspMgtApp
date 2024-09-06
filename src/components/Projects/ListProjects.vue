@@ -1,37 +1,41 @@
 <template>
   <div class="projects-container">
     <h2>Projects List</h2>
-    <!-- Button to navigate to add a new project -->
     <button class="btn-add-project" @click="navigateToAdd">
       <span class="material-symbols-outlined">add_circle</span> Add Project
     </button>
 
-    <div class="project-cards">
-      <div v-for="project in projectsWithTasksAndCosts" :key="project.projectId" class="project-card">
-        <div class="project-image-wrapper">
-          <img
-            v-if="project.imageURL"
-            :src="project.imageURL"
-            alt="Project Image"
-            class="project-image"
-          />
-          <img
-            v-else
-            src="https://placehold.co/600x400"
-            alt="Placeholder Image"
-            class="project-image"
-          />
+    <!-- Show message if no projects are available -->
+    <div v-if="!projectsWithTasksPartsAndCosts.length">
+      <p>No projects available to display.</p>
+    </div>
+
+    <div v-else>
+      <div v-for="project in projectsWithTasksPartsAndCosts" :key="project.projectId" class="project-card">
+        <!-- Fetch project images using the project ID -->
+        <!-- <div v-if="projectImages[project.projectId] && projectImages[project.projectId].length" class="project-images">
+          <div v-for="(image, index) in projectImages[project.projectId]" :key="index" class="image-wrapper"> -->
+            <!-- Assuming image is an object with 'url' and 'fileName' properties -->
+            <!-- <img :src="image.url" :alt="image.fileName || 'Project Image'" class="project-image-wrapper" />
+          </div>
+        </div> -->
+
+        <div>
+          <img src="https://placehold.co/600x400" alt="Placeholder Image" class="project-image" />
         </div>
 
-        <div class="project-details">
+        <!-- Project details section -->
+        <div v-if="project" class="project-details">
           <h3>{{ project.projectName }}</h3>
           <p><strong>Project ID:</strong> {{ project.projectId }}</p>
           <p><strong>Status:</strong> <span :class="statusClass(project.status)">{{ project.status }}</span></p>
           <p><strong>Tasks Count:</strong> {{ project.tasksCount }}</p>
           <p><strong>Total Hours:</strong> {{ project.totalNbrHrs }}</p>
           <p><strong>Total Costs:</strong> {{ project.totalCosts }}</p>
+          <p><strong>Total Images:</strong> </p>
         </div>
 
+        <!-- Project action buttons -->
         <div class="project-actions">
           <button @click="navigateToEdit(project.projectId)" class="action-button">
             <span class="material-symbols-outlined">edit</span> Edit
@@ -45,85 +49,91 @@
   </div>
 </template>
 
+
 <script setup>
 import { onMounted, computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/projectStore';
+import { useStorageStore } from '@/stores/storageStore';
 import { useTaskStore } from '@/stores/taskStore';
+import { usePartStore } from '@/stores/partStore';
 import { useCostStore } from '@/stores/costStore';
 
-// Set up router, project store, task store, and cost store
+// Set up stores and router
 const projectStore = useProjectStore();
+const storageStore = useStorageStore();
 const taskStore = useTaskStore();
+const partStore = usePartStore();
 const costStore = useCostStore();
 const router = useRouter();
 
-const tasks = ref([]);
-const costs = ref([]);
+// Define projectImages as a reactive object
+const projectImages = ref({});
 
-// Computed property for projects with task counts and total costs
-const projectsWithTasksAndCosts = computed(() => {
-  const uniqueProjects = new Map();
+onMounted(async () => {
+  // Fetch project-related data
+  await projectStore.fetchProjects();
+  await taskStore.fetchTasks();
+  await partStore.fetchParts();
+  await costStore.fetchCosts();
 
-  projectStore.projects.forEach((project) => {
-    const projectTasks = taskStore.getTasksByProjectId(project.projectId);
-    const tasksCount = projectTasks.length;
-    const totalNbrHrs = projectTasks.reduce((sum, task) => sum + task.NbrHrs, 0);
+  // Fetch images for each project individually
+  for (const project of projectStore.projects) {
+    try {
+      // Fetch project-specific images
+      const images = await storageStore.fetchProjectImages(project.projectId);
+      console.log(images)
+      // Store the images in projectImages under the projectId
+      projectImages.value[project.projectId] = images;
+    } catch (error) {
+      console.error(`Failed to fetch images for project ${project.projectId}:`, error.message);
+      projectImages.value[project.projectId] = []; // Ensure empty array if fetching images fails
+    }
+  }
+});
 
-    const projectCosts = costStore.getCostsByProjectId(project.projectId);
-    const totalCosts = projectCosts.reduce((sum, cost) => sum + cost.amount, 0);
+// Computed property for projects with tasks, parts, and costs
+const projectsWithTasksPartsAndCosts = computed(() => {
+  return projectStore.projects && projectStore.projects.length > 0
+    ? projectStore.projects.map((project) => {
+      const projectTasks = taskStore.getTasksByProjectId(project.projectId);
+      const tasksCount = projectTasks.length;
+      const totalNbrHrs = projectTasks.reduce((sum, task) => sum + task.NbrHrs, 0);
 
-    // Avoid adding duplicate projects
-    if (!uniqueProjects.has(project.projectId)) {
-      uniqueProjects.set(project.projectId, {
+      const projectParts = partStore.getPartsByProjectId(project.projectId);
+      const partsCount = projectParts.length;
+
+      const projectCosts = costStore.getCostsByProjectId(project.projectId);
+      const totalCosts = projectCosts.reduce((sum, cost) => sum + cost.amount, 0);
+
+      return {
         ...project,
         tasksCount,
         totalNbrHrs,
+        partsCount,
         totalCosts,
-      });
-    }
-  });
-
-  return Array.from(uniqueProjects.values()); // Convert back to an array
+      };
+    })
+    : [];
 });
 
-onMounted(async () => {
-  await projectStore.fetchProjects();
-  await taskStore.fetchTasks();
-  await costStore.fetchCosts(); 
-});
+// Navigation
+const navigateToAdd = () => router.push('/addProject');
+const navigateToEdit = (id) => router.push(`/editProject/${id}`);
+const navigateToView = (id) => router.push(`/viewProject/${id}`);
 
-// Navigation functions
-const navigateToAdd = () => {
-  router.push('/addProject');
-};
-
-const navigateToEdit = (id) => {
-  router.push(`/editProject/${id}`);
-};
-
-const navigateToView = (id) => {
-  console.log(id)
-  router.push(`/viewProject/${id}`);
-};
-
-// Method to determine the class for status styling
+// Status Class
 const statusClass = (status) => {
-  if (!status) return ''; // Return an empty string if status is undefined or null
-  
+  if (!status) return '';
   switch (status.toLowerCase()) {
-    case 'in progress':
-      return 'status in-progress';
-    case 'completed':
-      return 'status completed';
-    case 'on hold':
-      return 'status on-hold';
-    default:
-      return 'status';
+    case 'in progress': return 'status in-progress';
+    case 'completed': return 'status completed';
+    case 'on hold': return 'status on-hold';
+    default: return 'status';
   }
 };
-
 </script>
+
 
 <style scoped>
 /* Container for the project list and add button */
@@ -178,7 +188,7 @@ h2 {
 }
 
 .project-image-wrapper {
-  width: 100%;
+  width: 150px;
   height: 150px;
   overflow: hidden;
 }

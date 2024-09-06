@@ -60,6 +60,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  projectName: {
+    type: String,
+    required: true,
+  },
   projectId: {
     type: String,
     required: true,
@@ -75,18 +79,18 @@ const taskData = ref({
   priority: 'Medium',
   status: 'Pending',
   nbrHrs: 1,
-  notes: '',
+  // notes: '',
   projectId: props.projectId,
 });
 
 const isEditing = ref(false);
 
 onMounted(() => {
-  if (props.taskId) {
+  if (props.projectId) {
     isEditing.value = true;
-    const existingTask = taskStore.getTaskById(props.taskId);
-    if (existingTask) {
-      taskData.value = { ...existingTask };
+    const existingProjectTasks = taskStore.fetchTasksByProjectId(props.projectId);
+    if (existingProjectTasks) {
+      taskData.value = { ...existingProjectTasks };
     } else {
       errorStore.showError("Task not found");
     }
@@ -120,7 +124,7 @@ const clearTaskData = () => {
     priority: 'Medium',
     status: 'Pending',
     nbrHrs: 1,
-    notes: '',
+    // notes: '',
     projectId: props.projectId,
   };
   isEditing.value = false;
