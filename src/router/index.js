@@ -23,6 +23,11 @@ import AddPart from '@/components/Parts/AddPart.vue';
 import EditPart from '@/components/Parts/EditPart.vue';
 import ViewPart from '@/components/Parts/ViewPart.vue';
 
+import ListCosts from '@/components/Costs/ListCosts.vue';
+import AddCost from '@/components/Costs/AddCost.vue';
+import EditCost from '@/components/Costs/EditCost.vue';
+import ViewCost from '@/components/Costs/ViewCost.vue';
+
 
 const routes = [
   { path: '/', name: 'HomeView', component: HomeView },
@@ -35,7 +40,7 @@ const routes = [
   // { path: '/viewUser/:id', name: 'ViewUser', component: View, props: true },
 
   { path: '/tasks', name: 'Tasks', component: TasksView, meta: { requiresAuth: true, requiresAdmin: true }},
-  { path: '/addTask', name: 'AddTask', component: AddTask, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/addTask/:projectId/:projectName', name: 'AddTask', component: AddTask, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editTask/:id', name: 'EditTask', component: EditTask, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/viewTask/:id', name: 'ViewTask', component: ViewTask, props: true, meta: { requiresAuth: true,  }},
 
@@ -45,10 +50,14 @@ const routes = [
   { path: '/viewProject/:id', name: 'viewProject', component: ViewProject, props: true, meta: { requiresAuth: true,  }},
 
   { path: '/parts', name: 'listParts', component: ListParts, meta: { requiresAuth: true, requiresAdmin: true }},
-  { path: '/addPart', name: 'addPart', component: AddPart, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/addPart/:projectId', name: 'addPart', component: AddPart, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editPart/:id', name: 'editPart', component: EditPart, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/viewPart/:id', name: 'viewPart', component: ViewPart, props: true, meta: { requiresAuth: true,  }},
 
+  { path: '/costs', name: 'listCosts', component: ListCosts, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/addCost/:projectId', name: 'addCost', component: AddCost, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/editCost/:id', name: 'editCost', component: EditCost, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/viewCost/:id', name: 'viewCost', component: ViewCost, props: true, meta: { requiresAuth: true,  }},
 
 
 ];

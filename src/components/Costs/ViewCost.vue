@@ -11,12 +11,12 @@
   <script setup>
   import { ref, onMounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { usetaskStore } from '@/stores/taskStore';
+  import { useTaskStore } from '@/stores/taskStore';
   import { useErrorStore } from '@/stores/errorStore';
   
   const route = useRoute();
   const router = useRouter();
-  const taskStore = usetaskStore();
+  const taskStore = useTaskStore();
   const errorStore = useErrorStore();
   const item = ref(null);
   

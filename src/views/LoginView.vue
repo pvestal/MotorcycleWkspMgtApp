@@ -1,35 +1,58 @@
 <template>
   <div class="auth-container">
-    <label v-if="!userStore.isAuthenticated" for="loginGoogleBtn">Login</label>
-    <button v-if="!userStore.isAuthenticated" @click="loginWithGoogle" name="loginGoogleBtn">Login with Google</button>
-
-    <label v-if="userStore.isAuthenticated" for="logoutBtn">Logout</label>
-    <button v-if="userStore.isAuthenticated" @click="logOut" name="logoutBtn">Logout</button>
+    <div v-if="userStore.isLoading">
+      Loading...
+    </div>
+    <div v-else-if="userStore.user === null">
+      <label for="loginGoogleBtn">Login</label>
+      <button @click="loginWithGoogle" id="loginGoogleBtn">Login with Google</button>
+      <button @click="loginAnonymously" id="loginAnonymousBtn">Continue as Guest</button>
+    </div>
+    <div v-else-if="userStore.isAnonymous">
+      <p>You're currently browsing as a guest.</p>
+      <label for="loginGoogleBtn">Login</label>
+      <button @click="loginWithGoogle" id="loginGoogleBtn">Login with Google</button>
+    </div>
+    <div v-else>
+      <p>Welcome, {{ userStore.userDisplayName }}!</p>
+      <label for="logoutBtn">Logout</label>
+      <button @click="logOut" id="logoutBtn">Logout</button>
+    </div>
   </div>
 
-  <userProfileComponent v-if="userStore.isAuthenticated" :user="userStore.user" />
+  <userProfileComponent v-if="userStore.isAuthenticated && !userStore.isAnonymous" :user="userStore.user" />
 </template>
 
-
 <script setup>
-import { onMounted } from 'vue';
+// import { watch } from 'vue';
 import { useUserStore } from '../stores/userStore'; 
 import { useErrorStore } from '@/stores/errorStore';
 import userProfileComponent from '../components/Users/userProfileComponent.vue'
 
-
 const userStore = useUserStore(); 
 const errorStore = useErrorStore();
 
-onMounted(async () => {
-  await userStore.fetchUser(); // Fetch user details on mount if already logged in
-});
+// watch(() => userStore.user, (newUser) => {
+//   console.log("User state changed:", newUser);
+// }, { deep: true });
 
 const loginWithGoogle = async () => {
+  console.log("Initiating Google login");
   try {
-    await userStore.loginWithGoogle();  // Use the login action from userStore
+    await userStore.loginWithGoogle();
   } catch (error) {
-    errorStore.showError('Google login error:', error.message);
+    console.error("Google login error:", error);
+    errorStore.showError('Google login error: ' + error.message);
+  }
+};
+
+const loginAnonymously = async () => {
+  console.log("Initiating anonymous login");
+  try {
+    await userStore.loginAnonymously();
+  } catch (error) {
+    console.error("Anonymous login error:", error);
+    errorStore.showError('Anonymous login error: ' + error.message);
   }
 };
 
@@ -38,11 +61,11 @@ const logOut = async () => {
     await userStore.logout();
     console.log("User logged out");
   } catch (error) {
-    errorStore.showError('Error logging out:', error.message);
+    console.error("Error logging out:", error);
+    errorStore.showError('Error logging out: ' + error.message);
   }
 };
 </script>
-
 
 <style scoped>
 .auth-container {

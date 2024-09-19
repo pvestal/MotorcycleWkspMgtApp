@@ -1,12 +1,10 @@
 <template>
   <div class="task-form-container">
-    <h2>TF-{{ isEditing ? 'Edit Task' : 'Add Task' }} 
-      <span v-if="props.projectName"> - Project: {{ props.projectName }}</span>
-      <br>
-      <span>toggle</span>
+    <h2>{{ isEditing ? 'Edit Task' : 'Add Task' }} 
+      <span v-if="projectId && projectName"> - Project: {{ projectName }} - Id: {{ projectId }}</span>
     </h2>
-    <form @submit.prevent="handleTaskSubmit">
 
+    <form @submit.prevent="handleTaskSubmit">
       <div class="form-group">
         <label for="taskTitle">Task Title:</label>
         <input type="text" v-model="taskData.taskTitle" id="taskTitle" class="form-control" required />
@@ -31,11 +29,7 @@
         <label for="nbrHrs">Time: (number of hours)</label>
         <input type="number" v-model="taskData.nbrHrs" id="nbrHrs" class="form-control" required />
       </div>
-      <!-- <div class="form-group">
-        <label for="notes">Notes:</label>
-        <textarea v-model="taskData.notes" id="notes" class="form-control"></textarea>
-      </div> -->
-      <NoteForm :projectId="projectId" :projectName="projectName" class="form-control" />
+
       <div class="form-actions">
         <button type="submit" class="btn-submit">{{ isEditing ? 'Update Task' : 'Add Task' }}</button>
         <button type="button" class="btn-cancel" @click="cancelTaskEdit">Cancel</button>
@@ -45,26 +39,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineProps } from 'vue';
 import { useTaskStore } from '@/stores/taskStore';
 import { useErrorStore } from '@/stores/errorStore';
 import { useRouter } from 'vue-router';
-import NoteForm from '../Projects/NoteForm.vue';
 
-const router = useRouter();
-const taskStore = useTaskStore();
-const errorStore = useErrorStore();
-
-const props = defineProps({
-  project: {
-    type: Object,
-    required: true,
-  },
-  projectName: {
+const { projectId, projectName, taskId } = defineProps({
+  projectId: {
     type: String,
     required: true,
   },
-  projectId: {
+  projectName: {
     type: String,
     required: true,
   },
@@ -74,48 +59,61 @@ const props = defineProps({
   },
 });
 
+const router = useRouter();
+const taskStore = useTaskStore();
+const errorStore = useErrorStore();
+
+const isEditing = ref(false);
+
 const taskData = ref({
   taskTitle: '',
   priority: 'Medium',
   status: 'Pending',
   nbrHrs: 1,
-  // notes: '',
-  projectId: props.projectId,
+  projectId,
+  projectName,
 });
 
-const isEditing = ref(false);
-
 onMounted(() => {
-  if (props.projectId) {
+  if (taskId) {
     isEditing.value = true;
-    const existingProjectTasks = taskStore.fetchTasksByProjectId(props.projectId);
-    if (existingProjectTasks) {
-      taskData.value = { ...existingProjectTasks };
+    const existingTask = taskStore.getTasksByProjectId(taskId);
+    if (existingTask) {
+      taskData.value = { ...existingTask };
     } else {
-      errorStore.showError("Task not found");
+      errorStore.showError('Task not found');
     }
   }
 });
 
 const handleTaskSubmit = async () => {
   try {
+    taskData.value.projectId = projectId;
+
     if (isEditing.value) {
-      await taskStore.updateTask(props.taskId, taskData.value);
+      await taskStore.updateTask(taskId, taskData.value);
     } else {
       await taskStore.addTask(taskData.value);
     }
+
     clearTaskData();
-    router.push(`/viewProject/${props.projectId}`);
+      // Navigate back to the project view
+  router.push({
+    name: 'ViewProject',
+    params: { id: projectId },
+  });
   } catch (error) {
-   errorStore.showError('An error occurred:', error);
+    errorStore.showError('An error occurred:', error);
   }
 };
 
-
-  const cancelTaskEdit = () => {
+const cancelTaskEdit = () => {
   clearTaskData();
-  emit('cancel-task');
-  router.push(`/viewProject/${props.projectId}`);
+    // Navigate back to the project view
+    router.push({
+    name: 'ViewProject',
+    params: { id: projectId },
+  });
 };
 
 const clearTaskData = () => {
@@ -124,12 +122,13 @@ const clearTaskData = () => {
     priority: 'Medium',
     status: 'Pending',
     nbrHrs: 1,
-    // notes: '',
-    projectId: props.projectId,
+    projectId,
+    projectName,
   };
   isEditing.value = false;
 };
 
+console.log('TaskForm props:', projectId, projectName, taskId);
 </script>
 
 
@@ -222,6 +221,22 @@ const clearTaskData = () => {
 .btn-cancel:hover {
   background-color: #999;
 }
+
+.btn-add-task {
+  display: block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-add-task:hover {
+  background-color: #218838;
+}
+
 
 /* Mobile-specific styles */
 @media (max-width: 600px) {

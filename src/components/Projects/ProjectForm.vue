@@ -1,28 +1,32 @@
 <template>
   <div class="form-container">
-    <!-- Project Name and ID are always visible -->
-    <div class="form-group">
-      <label for="projectName">Project Name:</label>
-      <input type="text" v-model="formData.projectName" id="projectName" class="form-control" required />
-    </div>
+    <!-- Back button -->
+    <button @click="cancelEdit">Back</button>
 
-    <div class="form-group inline-group">
-      <p>Project ID: {{ formData.projectId }}</p>
-      <div class="owner-field">
+    <form @submit.prevent="handleProjectSave">
+      <!-- Project Name Input -->
+      <div class="form-group">
+        <label for="projectName">Project Name:</label>
+        <input type="text" v-model="formData.projectName" id="projectName" class="form-control" required />
+      </div>
+
+      <!-- Project ID (display only) -->
+      <p v-if="projectId">Project ID: {{ projectId }}</p>
+
+      <!-- Meta Information (make editable) -->
+      <div class="form-group inline-group">
         <label for="owner">Owner:</label>
         <input type="text" v-model="formData.owner" id="owner" class="form-control" required />
+
+        <label for="status">Status:</label>
+        <select v-model="formData.status" id="status" class="form-control" required>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+          <option value="On Hold">On Hold</option>
+        </select>
       </div>
-    </div>
 
-    <!-- Expand/Collapse button for additional fields -->
-    <div class="expand-toggle">
-      <span class="material-symbols-outlined" @click="toggleSection('mainVisible')">
-        {{ mainVisible ? 'expand_less' : 'expand_more' }} Details
-      </span>
-    </div>
-
-    <!-- Additional form fields hidden when collapsed -->
-    <div v-show="mainVisible" class="additional-fields">
+      <!-- Start Date and End Date -->
       <div class="form-group inline-group">
         <div class="date-field">
           <label for="startDate">Start Date:</label>
@@ -34,80 +38,104 @@
         </div>
       </div>
 
+      <!-- VIN Input Field -->
       <div class="form-group">
-        <label for="status">Status:</label>
-        <select v-model="formData.status" id="status" class="form-control" required>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-          <option value="On Hold">On Hold</option>
-        </select>
+        <label for="vin">VIN:</label>
+        <input type="text" v-model="formData.vin" id="vin" class="form-control" @change="fetchVehicleData"
+          maxlength="17" required />
       </div>
 
-      <!-- Notes Section -->
-      <div class="form-group">
-        <label for="notes">Notes:</label>
-        <textarea v-model="formData.notes" id="notes" class="form-control"></textarea>
+      <!-- Display Vehicle Details -->
+      <!-- Start Date and End Date -->
+      <div class="form-group inline-group">
+        <div class="form-group">
+          <label for="make">Make:</label>
+          <input type="text" v-model="formData.make" id="make" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label for="model">Model:</label>
+          <input type="text" v-model="formData.model" id="model" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label for="year">Year:</label>
+          <input type="text" v-model="formData.year" id="year" class="form-control" readonly />
+        </div>
       </div>
-    </div>
 
-    <!-- Action buttons -->
-    <div class="form-actions">
-      <button type="submit" class="btn-submit">{{ isEditing ? 'Update Project' : 'Add Project' }}</button>
-      <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
-    </div>
-  </div>
+      <!-- Additional Vehicle Fields -->
+      <div class="form-group">
+        <label for="manufacturer">Manufacturer:</label>
+        <input type="text" v-model="formData.manufacturer" id="manufacturer" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="bodyClass">Body Class:</label>
+        <input type="text" v-model="formData.bodyClass" id="bodyClass" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="displacementCC">Displacement (CC):</label>
+        <input type="text" v-model="formData.displacementCC" id="displacementCC" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="engineConfiguration">Engine Configuration:</label>
+        <input type="text" v-model="formData.engineConfiguration" id="engineConfiguration" class="form-control"
+          readonly />
+      </div>
+      <div class="form-group">
+        <label for="engineCylinders">Engine Cylinders:</label>
+        <input type="text" v-model="formData.engineCylinders" id="engineCylinders" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="engineHP">Engine Horsepower (HP):</label>
+        <input type="text" v-model="formData.engineHP" id="engineHP" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="fuelTypePrimary">Fuel Type:</label>
+        <input type="text" v-model="formData.fuelTypePrimary" id="fuelTypePrimary" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="gvwr">GVWR:</label>
+        <input type="text" v-model="formData.gvwr" id="gvwr" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="plantCountry">Plant Country:</label>
+        <input type="text" v-model="formData.plantCountry" id="plantCountry" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="series">Series:</label>
+        <input type="text" v-model="formData.series" id="series" class="form-control" readonly />
+      </div>
+      <div class="form-group">
+        <label for="valveTrainDesign">Valve Train Design:</label>
+        <input type="text" v-model="formData.valveTrainDesign" id="valveTrainDesign" class="form-control" readonly />
+      </div>
 
-  <!-- Task, Parts, Costs Sections -->
-  <div v-if="formData.projectId" class="form-container compact-sections">
-    <!-- Tasks -->
-    <div class="section tasks-section">
-      <span class="material-symbols-outlined" @click="toggleSection('tasksVisible')">
-        {{ tasksVisible ? 'expand_less' : 'expand_more' }} Tasks
-      </span>
-      <TaskForm v-if="tasksVisible" :projectId="formData.projectId" :projectName="formData.projectName" />
-      <ListTasks v-if="tasksVisible" :projectId="formData.projectId" />
-    </div>
-
-    <!-- Parts -->
-    <div class="section parts-section">
-      <span class="material-symbols-outlined" @click="toggleSection('partsVisible')">
-        {{ partsVisible ? 'expand_less' : 'expand_more' }} Parts
-      </span>
-      <ListParts v-if="partsVisible && isEditing" :projectId="formData.projectId" />
-    </div>
-
-    <!-- Costs -->
-    <div class="section costs-section">
-      <span class="material-symbols-outlined" @click="toggleSection('costsVisible')">
-        {{ costsVisible ? 'expand_less' : 'expand_more' }} Costs
-      </span>
-      <ListCosts v-if="costsVisible && isEditing" :projectId="formData.projectId" />
-    </div>
+      <!-- Action buttons -->
+      <div class="form-actions">
+        <button type="submit" class="btn-submit">
+          {{ isEditing ? 'Update Project' : 'Add Project' }}
+        </button>
+        <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
+      </div>
+    </form>
   </div>
 </template>
 
 
+
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import axios from 'axios';
 import { useProjectStore } from '@/stores/projectStore';
-import { useTaskStore } from '@/stores/taskStore';
 import { useErrorStore } from '@/stores/errorStore';
 
-import TaskForm from '../Tasks/TaskForm.vue';
-import ListTasks from '../Tasks/ListTasks.vue';
-import ListParts from '../Parts/ListParts.vue';
-import NoteForm from './NoteForm.vue';
-
-// Setup the necessary stores and router instances
+// Initialize stores and router instances
 const projectStore = useProjectStore();
-const taskStore = useTaskStore();
 const errorStore = useErrorStore();
 const router = useRouter();
 const route = useRoute();
-const project = ref({});
 
-// Setup reactive variables for project data and UI states
+// Reactive variables
 const formData = ref({
   projectId: '',
   projectName: '',
@@ -115,111 +143,219 @@ const formData = ref({
   endDate: '',
   status: 'In Progress',
   owner: '',
+  vin: '',
+  make: '',
+  model: '',
+  year: '',
+  manufacturer: '',
+  bodyClass: '',
+  displacementCC: '',
+  engineConfiguration: '',
+  engineCylinders: '',
+  engineHP: '',
+  fuelTypePrimary: '',
+  gvwr: '',
+  plantCountry: '',
+  series: '',
+  valveTrainDesign: '',
   tasks: [],
   parts: [],
   costs: [],
-  timeEntries: [],
   imageUrls: [],
 });
 
-const isEditing = ref(false); // Boolean to determine if the form is in editing mode
-const projectTasks = ref([]); // Array to store tasks associated with the project
-const tasksVisible = ref(false); // Boolean to toggle the task form visibility
-const partsVisible = ref(false);
-const costsVisible = ref(false);
-const mainVisible = ref(false); 
+const isEditing = ref(false);
 
-const emit = defineEmits(['updateProject', 'addProject']);
+const emit = defineEmits(['updateProject', 'addProject', 'cancelEdit']);
 
-// Initialize the form data and load tasks when the component is mounted
-onMounted(() => {
+// Computed properties
+const projectId = computed(() => formData.value.projectId);
+const projectName = computed(() => formData.value.projectName);
+
+// Initialize form data when the component is mounted
+onMounted(async () => {
   if (route.params.id) {
     isEditing.value = true;
-    const existingProject = projectStore.getProjectById(route.params.id);
+    await projectStore.fetchProjects();
+    const existingProject = projectStore.fetchProjectById(route.params.id);
     if (existingProject) {
       formData.value = { ...existingProject };
-      fetchProjectTasks();
+      // Fetch vehicle data if VIN is present
+      if (formData.value.vin) {
+        await fetchVehicleData();
+      }
     } else {
-      errorStore.showError("Project not found");
+      errorStore.showError('Project not found');
       router.push('/projects');
     }
   }
 });
+const fetchVehicleData = async () => {
+  let vin = formData.value.vin.trim().toUpperCase();
+  formData.value.vin = vin; // Update VIN in formData to uppercase
 
-// Fetch tasks associated with the current project
-const fetchProjectTasks = async () => {
-  if (formData.value.projectId) {
-    projectTasks.value = await taskStore.getTasksByProjectId(formData.value.projectId);
+  if (!isValidVin(vin)) {
+    errorStore.showError('VIN must be 17 characters and contain only allowed characters (no I, O, Q).');
+    clearVehicleData();
+    return;
+  }
+
+    try {
+      const vehicleData = await decodeVIN(vin);
+      console.log('Vehicle Data:', vehicleData);
+
+      // Check for errors in the response
+      if (vehicleData.ErrorCode && vehicleData.ErrorCode !== '0') {
+        handleVinErrors(vehicleData.ErrorCode, vehicleData.ErrorText);
+        clearVehicleData();
+        return;
+      }
+
+      // Map vehicle data to formData
+      formData.value.make = vehicleData.Make || '';
+      formData.value.model = vehicleData.Model || '';
+      formData.value.year = vehicleData.ModelYear || '';
+      formData.value.manufacturer = vehicleData.Manufacturer || '';
+      formData.value.bodyClass = vehicleData.BodyClass || '';
+      formData.value.displacementCC = vehicleData.DisplacementCC || '';
+      formData.value.engineConfiguration = vehicleData.EngineConfiguration || '';
+      formData.value.engineCylinders = vehicleData.EngineCylinders || '';
+      formData.value.engineHP = vehicleData.EngineHP || '';
+      formData.value.fuelTypePrimary = vehicleData.FuelTypePrimary || '';
+      formData.value.gvwr = vehicleData.GVWR || '';
+      formData.value.plantCountry = vehicleData.PlantCountry || '';
+      formData.value.series = vehicleData.Series || '';
+      formData.value.valveTrainDesign = vehicleData.ValveTrainDesign || '';
+
+    } catch (error) {
+      console.error('Error decoding VIN:', error);
+      errorStore.showError('Failed to decode VIN. Please check your network connection and try again.');
+      clearVehicleData();
+    }
+};
+
+const isValidVin = (vin) => {
+  const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
+  return vinRegex.test(vin);
+};
+
+// Function to decode VIN using NHTSA API
+const decodeVIN = async (vin) => {
+  const url = `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/${vin}?format=json`;
+  try {
+    const response = await axios.get(url);
+    const vehicleData = response.data.Results[0];
+    return vehicleData;
+  } catch (error) {
+    console.error('Error decoding VIN:', error);
+    throw error;
   }
 };
 
-// Handle the submission of the project form
+const handleVinErrors = (errorCodeStr, errorTextStr) => {
+  const errorCodes = errorCodeStr.split(',');
+  const errorMessages = errorTextStr.split(';').map(msg => msg.trim());
+
+  // Create a map of error codes to messages
+  const errorMap = {};
+  errorCodes.forEach((code, index) => {
+    errorMap[code.trim()] = errorMessages[index] || 'Unknown error';
+  });
+
+  // Display errors to the user
+  let fullErrorMessage = 'VIN decoding errors:\n';
+  for (const code in errorMap) {
+    fullErrorMessage += `${errorMap[code]}\n`;
+  }
+
+  errorStore.showError(fullErrorMessage);
+};
+
+
 const handleProjectSave = async () => {
   try {
-    let savedProject;
-
     if (isEditing.value) {
-      await projectStore.updateProject(route.params.id, formData.value);
-      savedProject = { ...formData.value, id: route.params.id }; // Include the ID of the updated project
-      emit('updateProject', savedProject);
+      // Update existing project
+      await projectStore.updateProject(projectId.value, formData.value);
+      emit('updateProject', formData.value);
     } else {
+      // Add new project
       const newProjectId = await projectStore.addProject(formData.value);
-      savedProject = { ...formData.value, id: newProjectId }; // Include the ID of the new project
-      emit('addProject', savedProject);
+      formData.value.projectId = newProjectId; // Assign the new ID
+      emit('addProject', formData.value);
     }
 
     clearFormData();
     router.push('/projects');
   } catch (error) {
-    errorStore.showError(error.message || "An unexpected error occurred");
+    errorStore.showError(error.message || 'An unexpected error occurred');
   }
 };
 
-// Cancel the editing or adding of a project
+// Cancel editing or adding a project
 const cancelEdit = () => {
+  emit('cancelEdit');
   clearFormData();
   router.push('/projects');
 };
 
-// Clear the form data and reset UI states
+// Clear form data
 const clearFormData = () => {
   formData.value = {
-    projectId: '',
+    projectId: null,
     projectName: '',
     startDate: '',
     endDate: '',
     status: 'In Progress',
     owner: '',
+    vin: '',
+    make: '',
+    model: '',
+    year: '',
+    manufacturer: '',
+    bodyClass: '',
+    displacementCC: '',
+    engineConfiguration: '',
+    engineCylinders: '',
+    engineHP: '',
+    fuelTypePrimary: '',
+    gvwr: '',
+    plantCountry: '',
+    series: '',
+    valveTrainDesign: '',
     tasks: [],
     parts: [],
     costs: [],
     imageUrls: [],
-  }
-}
-// Function to toggle visibility of sections
-const toggleSection = (section) => {
-  switch (section) {
-    case 'tasksVisible':
-      tasksVisible.value = !tasksVisible.value;
-      break;
-    case 'partsVisible':
-      partsVisible.value = !partsVisible.value;
-      break;
-    case 'costsVisible':
-      costsVisible.value = !costsVisible.value;
-      break;
-    case 'mainVisible':
-      mainVisible.value = !mainVisible.value;
-      break;
-  }
+  };
 };
 
+// Function to clear vehicle data
+const clearVehicleData = () => {
+  formData.value.make = '';
+  formData.value.model = '';
+  formData.value.year = '';
+  formData.value.manufacturer = '';
+  formData.value.bodyClass = '';
+  formData.value.displacementCC = '';
+  formData.value.engineConfiguration = '';
+  formData.value.engineCylinders = '';
+  formData.value.engineHP = '';
+  formData.value.fuelTypePrimary = '';
+  formData.value.gvwr = '';
+  formData.value.plantCountry = '';
+  formData.value.series = '';
+  formData.value.valveTrainDesign = '';
+};
 </script>
 
+
+
+
 <style scoped>
-/* Shared style for the form container and other sections */
+/* Matching ViewProject styling */
 .form-container {
-  max-width: 500px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 20px;
   border: 1px solid #ccc;
@@ -229,30 +365,41 @@ const toggleSection = (section) => {
   font-family: 'Arial', sans-serif;
 }
 
-/* Style individual form groups */
-.form-group {
-  margin-bottom: 16px;
+.project-meta p {
+  margin: 8px 0;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #555;
+.project-detail-container button {
+  margin-right: 15px;
 }
 
-/* Style the form controls */
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
+h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
 }
 
-/* Style the form action buttons */
+/* Meta information section */
+.project-meta {
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.material-symbols-outlined {
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* For expanding/collapsing sections */
+.additional-fields {
+  padding: 15px 0;
+  transition: all 0.3s ease;
+}
+
+/* Action buttons (submit and cancel) */
 .form-actions {
   display: flex;
   justify-content: space-between;
+  margin-top: 20px;
 }
 
 .btn-submit,
@@ -283,71 +430,4 @@ const toggleSection = (section) => {
 .btn-cancel:hover {
   background-color: #999;
 }
-
-/* Style for the toggle icons */
-.material-symbols-outlined {
-  vertical-align: -5px;
-  cursor: pointer;
-  font-size: 24px;
-  color: #007bff;
-}
-
-.material-symbols-outlined:hover {
-  color: #0056b3;
-}
-
-/* Align items side by side for certain fields */
-.inline-group {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.date-field,
-.owner-field {
-  flex: 1;
-}
-
-.expand-toggle {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.additional-fields {
-  padding: 10px 0;
-  transition: all 0.3s ease;
-}
-
-.section {
-  margin-bottom: 16px;
-}
-
-.compact-sections .section {
-  background-color: #f0f0f0;
-  padding: 10px;
-  border-radius: 6px;
-}
-
-/* Ensure buttons fit well in compact view */
-.form-actions {
-  display: flex;
-  justify-content: space-between;
-}
-
-/* Animations for expanding/collapsing sections */
-.expand_toggle {
-  cursor: pointer;
-}
-
-.section {
-  transition: max-height 0.3s ease, padding 0.3s ease;
-  overflow: hidden;
-}
-
-.section.collapsed {
-  max-height: 0;
-  padding: 0;
-}
-
 </style>

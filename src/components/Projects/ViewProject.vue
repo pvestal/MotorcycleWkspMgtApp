@@ -1,42 +1,53 @@
 <template>
   <div v-if="project" class="project-detail-container">
     <button @click="router.back()">Back</button>
-    <button @click="navigateToEdit(route.params.id)">Edit</button>
+    <button @click="toggleEditMode">{{ isEditing ? 'Cancel' : 'Edit' }}</button>
 
-    <!-- Project Name and Meta Data -->
-    <h1 v-if="project.projectName">{{ project.projectName }}</h1>
-    <p>Project ID: {{ project.projectId }}</p>
-    <div class="project-meta">
-      <p><strong>Status:</strong> {{ project.status }}</p>
-      <p><strong>Owner:</strong> {{ project.owner }}</p>
-      <p><strong>Start Date:</strong> {{ formatDate(project.startDate) }}</p>
-      <p v-if="project.endDate"><strong>End Date:</strong> {{ formatDate(project.endDate) }}</p>
+    <!-- Project Form or Display -->
+    <div v-if="isEditing">
+      <!-- Use ProjectForm for editing -->
+      <ProjectForm
+        :isEditing="true"
+        :initialFormData="project"
+        @saveProject="handleProjectSave"
+        @cancelEdit="toggleEditMode"
+      />
+    </div>
+    <div v-else>
+      <!-- Display project details -->
+      <h1 v-if="project.projectName">{{ project.projectName }}</h1>
+      <p>Project ID: {{ project.projectId }}</p>
+
+      <div class="project-meta">
+        <p><strong>Status:</strong> {{ project.status }}</p>
+        <p><strong>Owner:</strong> {{ project.owner }}</p>
+        <p><strong>Start Date:</strong> {{ formatDate(project.startDate) }}</p>
+        <p v-if="project.endDate"><strong>End Date:</strong> {{ formatDate(project.endDate) }}</p>
+        <!-- Display vehicle details -->
+        <p><strong>VIN:</strong> {{ project.vin }}</p>
+        <p><strong>Make:</strong> {{ project.make }}</p>
+        <p><strong>Model:</strong> {{ project.model }}</p>
+        <p><strong>Year:</strong> {{ project.year }}</p>
+        <!-- Add other vehicle fields as needed -->
+      </div>
     </div>
 
-    <!-- Updated Project Images Section -->
+    <!-- Images Section -->
     <section class="project-section">
       <div class="section-header">
-        <h2>Project Images</h2>
+        <h2>Images</h2>
         <span class="material-symbols-outlined" @click="toggleSection('imagesVisible')">
           {{ imagesVisible ? 'expand_less' : 'expand_more' }}
         </span>
       </div>
 
       <div v-if="imagesVisible" class="project-images">
-        <h2>Uploaded Images</h2>
         <div v-if="project.imageUrls && project.imageUrls.length" class="image-gallery">
-          <div v-for="(imageData, index) in project.imageUrls" :key="index" class="image-wrapper">
-            <img :src="imageData.url"
-                 :alt="`${imageData.fileName} - Uploaded on ${new Date(imageData.uploadDate).toLocaleDateString()}`"
-                 class="uploaded-image"/>
-            <button v-if="imageData.url" @click="handleDeleteImage(imageData.url)" class="delete-button">
-              Delete
-            </button>
+          <div v-for="(image, index) in project.imageUrls" :key="index" class="image-wrapper">
+            <!-- {{ url }} -->
+            <img :src="image.url" alt="image.?fileName" class="uploaded-image" />
           </div>
         </div>
-
-        <!-- Project File Uploader -->
-        <ProjectFileUploader :projectId="projectId" @imageUploaded="handleImageUpload" />
       </div>
     </section>
 
@@ -48,7 +59,10 @@
           {{ tasksVisible ? 'expand_less' : 'expand_more' }}
         </span>
       </div>
-      <ListTasks v-if="tasksVisible" :projectId="projectId" :projectName="project.projectName" />
+      <ListTasks v-if="tasksVisible && tasks.length" :projectId="projectId" :projectName="projectName" :tasks="tasks" />
+
+
+      <p v-else>Tasks hidden or project not available.</p>
     </section>
 
     <!-- Parts Section -->
@@ -59,7 +73,9 @@
           {{ partsVisible ? 'expand_less' : 'expand_more' }}
         </span>
       </div>
-      <PartList v-if="partsVisible" :projectId="projectId" />
+      <ListParts v-if="partsVisible && parts.length" :projectId="projectId" :projectName="projectName" :parts="parts" />
+
+      <p v-else>No parts available.</p>
     </section>
 
     <!-- Costs Section -->
@@ -70,7 +86,9 @@
           {{ costsVisible ? 'expand_less' : 'expand_more' }}
         </span>
       </div>
-      <CostList v-if="costsVisible" :projectId="projectId" />
+      <ListCosts v-if="costsVisible && costs.length" :projectId="projectId" :projectName="projectName" :costs="costs" />
+
+      <p v-else>No costs available.</p>
     </section>
   </div>
 
@@ -80,99 +98,113 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '@/stores/projectStore';
+import { useTaskStore } from '@/stores/taskStore';
+import { usePartStore } from '@/stores/partStore';
+import { useCostStore } from '@/stores/costStore';
 import { useErrorStore } from '@/stores/errorStore';
 
 import ListTasks from '@/components/Tasks/ListTasks.vue';
-import PartList from '@/components/Parts/ListParts.vue';
-import CostList from '@/components/Costs/ListCosts.vue';
-import ProjectFileUploader from './ProjectFileUploader.vue';
+import ListCosts from '@/components/Costs/ListCosts.vue';
+import ListParts from '@/components/Parts/ListParts.vue';
+import ProjectForm from '@/components/Projects/ProjectForm.vue'; 
 
+// Initialize necessary hooks and stores
 const route = useRoute();
 const router = useRouter();
 const projectStore = useProjectStore();
+const taskStore = useTaskStore();
+const partStore = usePartStore();
+const costStore = useCostStore();
 const errorStore = useErrorStore();
 
-const projectId = ref(route.params.id);
+// Reactive references
 const project = ref(null);
+const tasks = ref([]);
+const parts = ref([]);
+const costs = ref([]);
+const isEditing = ref(false); // Flag to determine edit mode
 
 // Section visibility states
-const tasksVisible = ref(false);
-const partsVisible = ref(false);
-const costsVisible = ref(false);
-const imagesVisible = ref(true); // Project images section visibility
+const mainVisible = ref(true);
+const tasksVisible = ref(true);
+const partsVisible = ref(true);
+const costsVisible = ref(true);
+const imagesVisible = ref(true);
 
-onMounted(async () => {
-  if (projectId.value) {
+// Computed properties for projectId and projectName
+const projectId = computed(() => project.value?.projectId);
+const projectName = computed(() => project.value?.projectName);
+
+// Load project data function
+const loadProjectData = async (id) => {
+  try {
+    // Fetch all projects and tasks
     await projectStore.fetchProjects();
-    project.value = projectStore.getProjectById(projectId.value);
-  }
+    await taskStore.fetchTasks();
+    await partStore.fetchParts();
+    await costStore.fetchCosts();
 
-  if (!project.value) {
-    errorStore.showError("Project not found");
-    router.push('/projects');
+    // Retrieve the specific project
+    project.value = projectStore.fetchProjectById(id);
+
+    // Retrieve tasks, parts, and costs for the project
+    tasks.value = taskStore.fetchTasksByProjectId(id);
+    parts.value = partStore.fetchPartsByProjectId(id);
+    costs.value = costStore.fetchCostsByProject(id);
+
+    if (!project.value) {
+      errorStore.showError('Project not found');
+      router.push('/projects');
+    }
+  } catch (error) {
+    errorStore.showError('Something went wrong while fetching project data.');
+    console.error(error);
+  }
+};
+
+// Use onMounted to load project data
+onMounted(async () => {
+  const id = route.params.id;
+  if (id) {
+    await loadProjectData(id);
   }
 });
 
-// Watch for changes in route params and fetch project data
+// Watch for changes in route params
 watch(
   () => route.params.id,
   async (newId) => {
     if (newId) {
-      projectId.value = newId;
-      project.value = projectStore.getProjectById(projectId.value);
-
-      if (!project.value) {
-        await projectStore.fetchProjects();
-        project.value = projectStore.getProjectById(projectId.value);
-      }
-
-      if (!project.value) {
-        errorStore.showError("Project not found");
-        router.push('/projects');
-      }
+      await loadProjectData(newId);
     }
-  },
-  { immediate: true }
+  }
 );
 
-const navigateToEdit = (id) => router.push(`/editProject/${id}`);
+// Toggle edit mode
+const toggleEditMode = () => {
+  isEditing.value = !isEditing.value;
+};
 
-// Function to toggle section visibility
-const toggleSection = (section) => {
-  switch (section) {
-    case 'tasksVisible':
-      tasksVisible.value = !tasksVisible.value;
-
-      break;
-    case 'partsVisible':
-      partsVisible.value = !partsVisible.value;
-      break;
-    case 'costsVisible':
-      costsVisible.value = !costsVisible.value;
-      break;
-    case 'imagesVisible':
-      imagesVisible.value = !imagesVisible.value;
-      break;
+// Handle project save event from ProjectForm
+const handleProjectSave = async (updatedProject) => {
+  try {
+    await projectStore.updateProject(route.params.id, updatedProject);
+    project.value = { ...updatedProject };
+    isEditing.value = false;
+  } catch (error) {
+    errorStore.showError('Error saving project: ' + error.message);
   }
 };
 
+// Format date function
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString();
 };
-
-const handleImageUpload = async (imageUrl) => {
-  try {
-    const updatedImageUrls = [...(project.value.imageUrls || []), imageUrl];
-    await projectStore.updateProject(projectId.value, { imageUrls: updatedImageUrls });
-    project.value.imageUrls = updatedImageUrls;
-  } catch (error) {
-    errorStore.showError("Failed to update project with new image URL.");
-  }
-};
 </script>
+
 
 
 <style scoped>

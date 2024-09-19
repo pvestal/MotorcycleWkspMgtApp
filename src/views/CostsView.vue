@@ -1,33 +1,22 @@
 <template>
     <div>
-        <div v-for="project in projects" :key="project.projectId">
-            <ListTasks :projectId="project.projectId" :projectName="project.projectName"
-                :tasks="tasks.filter(task => task.projectId === project.projectId)" />
-        </div>
+      <h1>Costs for Projects</h1>
+      <ListCosts v-if="costs.length" :costs="costs"/>
     </div>
-</template>
+  </template>
+  
+  <script setup>
+  import { onMounted, ref } from 'vue';
+  import { useCostStore } from '@/stores/costStore';
+  import ListCosts from '@/components/Costs/ListCosts.vue';
+  
+  const costStore = useCostStore();
+const costs = ref(costStore.costs);
 
-<script setup>
-import { onMounted, ref } from 'vue';
-import ListTasks from '@/components/Tasks/ListTasks.vue';
-import { useProjectStore } from '@/stores/projectStore';
-import { useTaskStore } from '@/stores/taskStore';
-
-const projectStore = useProjectStore();
-const taskStore = useTaskStore();
-
-const projects = ref([]);
-const tasks = ref([]);
-
-onMounted(async () => {
-    await projectStore.fetchProjects();
-    projects.value = projectStore.projects;
-
-    await taskStore.fetchTasks();
-    tasks.value = taskStore.tasks;
+onMounted(async (projectId) => {
+    costStore.totalCostsByProjectId(projectId);
 });
-</script>
-
+  </script>
 
 <style scoped>
 /* Container for the ordered list */

@@ -1,23 +1,12 @@
 <template>
   <div class="image-uploader">
-    <!-- File input for image upload -->
-    <input type="file" @change="handleImageUpload" />
-    <br>
-    <br>
-    <!-- Preview the uploaded image -->
-    <div v-if="uploadedImageUrl" class="image-preview">
-      <img :src="uploadedImageUrl" alt="Project Image" />
-    </div>
-    <br>
-    <br>
-    <!-- Display uploaded images -->
-    <div v-if="props.projectId.imageUrls" class="project-images">
-      <h2>Uploaded Images</h2>
-      <div v-for="(imageData, index) in props.projectId.imageUrls" :key="index" class="image-wrapper">
-        <img :src="imageData.url" :alt="`${imageData.fileName}`" class="uploaded-image" />
-        <button @click="handleDeleteImage(imageData.url)" class="delete-button">Delete</button>
+    <div v-if="uploadedImageUrls.length" class="image-preview">
+      <div v-for="(imageUrl, index) in uploadedImageUrls" :key="index">
+        <img :src="imageUrl.url" alt="Project Image" />
+        <p>{{ imageUrl.fileName }} - Uploaded on {{ imageUrl.uploadDate }}</p>
       </div>
     </div>
+    <input type="file" multiple @change="handleImageUpload" />
   </div>
 </template>
 
@@ -26,7 +15,9 @@ import { ref } from 'vue';
 import { useStorageStore } from '@/stores/storageStore';
 import { useErrorStore } from '@/stores/errorStore';
 
-// Props passed from the parent
+const storageStore = useStorageStore();
+const errorStore = useErrorStore();
+
 const props = defineProps({
   projectId: {
     type: String,
@@ -34,40 +25,30 @@ const props = defineProps({
   },
 });
 
-// Emit an event when an image is uploaded
-const emit = defineEmits(['imageUploaded']);
-
-const storageStore = useStorageStore();
-const errorStore = useErrorStore();
-
-const uploadedImageUrl = ref('');
+const uploadedImageUrls = ref([]);
 
 const handleImageUpload = async (event) => {
-  const file = event.target.files[0];
-
-  if (!file) {
-    errorStore.showError('No file selected.');
-    return;
-  }
-
-  try {
-    // Upload the image and get its URL
-    const imageUrl = await storageStore.uploadProjectPhoto([file], props.projectId);
-
-    // Store the uploaded image URL
-    uploadedImageUrl.value = imageUrl[0];
-
-    // Emit the uploaded image URL to the parent component
-    emit('imageUploaded', imageUrl[0]);
-  } catch (error) {
-    errorStore.showError('Image upload failed: ' + error.message);
+  const files = event.target.files;
+  if (files.length > 0 && props.projectId) {
+    try {
+      const uploadedUrls = await storageStore.uploadProjectPhoto(files, props.projectId);
+      uploadedImageUrls.value = uploadedUrls;
+    } catch (error) {
+      errorStore.showError("Image upload error.");
+    }
+  } else {
+    errorStore.showError("No files selected or Project ID missing.");
   }
 };
 </script>
 
 <style scoped>
+.image-uploader {
+  margin-bottom: 1em;
+}
+
 .image-preview img {
-  max-width: 50%;
+  max-width: 100px;
   height: auto;
   border-radius: 8px;
   margin-bottom: 10px;

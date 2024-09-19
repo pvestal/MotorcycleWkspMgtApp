@@ -33,12 +33,13 @@
 
         <!-- Admin-specific links -->
         <ul v-if="isAdmin" class="nav-links">
-          <li><span class="material-symbols-outlined">key</span> Reserved</li>
-          <li @click="navigate('/users')"><span class="material-symbols-outlined">manage_accounts</span> User Management</li>
-          <li @click="navigate('/tasks')"><span class="material-symbols-outlined">menu</span> Tasks</li>
+
           <li @click="navigate('/projects')"><span class="material-symbols-outlined">emoji_objects</span> Projects</li>
-          <li @click="navigate('/costs')"><span class="material-symbols-outlined">paid</span> Costs</li>
+          <!-- <li><span class="material-symbols-outlined">key</span> Reserved</li> -->
+          <!-- <li @click="navigate('/users')"><span class="material-symbols-outlined">manage_accounts</span> User Management</li> -->
+          <li @click="navigate('/tasks')"><span class="material-symbols-outlined">menu</span> Tasks</li>
           <li @click="navigate('/parts')"><span class="material-symbols-outlined">handyman</span> Parts</li>
+          <li @click="navigate('/costs')"><span class="material-symbols-outlined">paid</span> Costs</li>
         </ul>
 
         <button class="close-btn" @click="toggleSidebar">Close</button>

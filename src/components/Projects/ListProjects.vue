@@ -11,43 +11,36 @@
     </div>
 
     <div v-else>
-      <div v-for="project in projectsWithTasksPartsAndCosts" :key="project.projectId" class="project-card">
-        <!-- Fetch project images using the project ID -->
-        <!-- <div v-if="projectImages[project.projectId] && projectImages[project.projectId].length" class="project-images">
-          <div v-for="(image, index) in projectImages[project.projectId]" :key="index" class="image-wrapper"> -->
-            <!-- Assuming image is an object with 'url' and 'fileName' properties -->
-            <!-- <img :src="image.url" :alt="image.fileName || 'Project Image'" class="project-image-wrapper" />
+      <!-- Wrap the cards in the .project-cards div -->
+      <div class="project-cards">
+        <div v-for="project in projectsWithTasksPartsAndCosts" :key="project.projectId" class="project-card">
+          <!-- Project details section -->
+          <div v-if="project" class="project-details">
+            <h3>{{ project.projectName }}</h3>
+            <span class="material-symbols-outlined"></span>
+            <p><strong>Project ID:</strong> {{ project.projectId }}</p>
+            <p><strong>Status:</strong> <span :class="statusClass(project.status)">{{ project.status }}</span></p>
+            <p><strong>Tasks Count:</strong> {{ project.tasksCount }}</p>
+            <p><strong>Total Hours:</strong> {{ project.totalNbrHrs }}</p>
+            <p><strong>Total Costs:</strong> {{ project.totalCosts }}</p>
+            <p><strong>Total Images:</strong> {{ projectImagesCount(project.projectId) }}</p>
           </div>
-        </div> -->
 
-        <div>
-          <img src="https://placehold.co/600x400" alt="Placeholder Image" class="project-image" />
-        </div>
-
-        <!-- Project details section -->
-        <div v-if="project" class="project-details">
-          <h3>{{ project.projectName }}</h3>
-          <p><strong>Project ID:</strong> {{ project.projectId }}</p>
-          <p><strong>Status:</strong> <span :class="statusClass(project.status)">{{ project.status }}</span></p>
-          <p><strong>Tasks Count:</strong> {{ project.tasksCount }}</p>
-          <p><strong>Total Hours:</strong> {{ project.totalNbrHrs }}</p>
-          <p><strong>Total Costs:</strong> {{ project.totalCosts }}</p>
-          <p><strong>Total Images:</strong> </p>
-        </div>
-
-        <!-- Project action buttons -->
-        <div class="project-actions">
-          <button @click="navigateToEdit(project.projectId)" class="action-button">
-            <span class="material-symbols-outlined">edit</span> Edit
-          </button>
-          <button @click="navigateToView(project.projectId)" class="action-button">
-            <span class="material-symbols-outlined">visibility</span> View
-          </button>
+          <!-- Project action buttons -->
+          <div class="project-actions">
+            <button @click="navigateToEdit(project.projectId)" class="action-button">
+              <span class="material-symbols-outlined">edit</span> Edit
+            </button>
+            <button @click="navigateToView(project.projectId)" class="action-button">
+              <span class="material-symbols-outlined">visibility</span> View
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
 
 
 <script setup>
@@ -70,6 +63,11 @@ const router = useRouter();
 // Define projectImages as a reactive object
 const projectImages = ref({});
 
+// Method to get total images count for a project
+const projectImagesCount = (projectId) => {
+  return projectImages.value[projectId] ? projectImages.value[projectId].length : 0;
+};
+
 onMounted(async () => {
   // Fetch project-related data
   await projectStore.fetchProjects();
@@ -82,7 +80,7 @@ onMounted(async () => {
     try {
       // Fetch project-specific images
       const images = await storageStore.fetchProjectImages(project.projectId);
-      console.log(images)
+      // console.log(images)
       // Store the images in projectImages under the projectId
       projectImages.value[project.projectId] = images;
     } catch (error) {
@@ -175,7 +173,7 @@ h2 {
 .project-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  gap: 30px;
 }
 
 .project-card {

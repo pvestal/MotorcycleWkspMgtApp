@@ -4,6 +4,7 @@
       <p><strong>Title:</strong> {{ task?.taskTitle }}</p>
       <p><strong>Priority:</strong> {{ task?.priority }}</p>
       <p><strong>Status:</strong> {{ task?.status }}</p>
+      <p><strong>NbrHrs: {{ task?.nbrHrs }}</strong></p>
       <button @click="goBack">Back</button>
     </div>
   </template>
@@ -19,6 +20,7 @@
   const taskStore = useTaskStore();
   const errorStore = useErrorStore();
   const task = ref(null);
+  
   
   onMounted(() => {
     const taskId = route.params.id;

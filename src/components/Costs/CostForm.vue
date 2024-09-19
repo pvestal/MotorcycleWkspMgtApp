@@ -1,96 +1,33 @@
 <template>
   <div>
-    <!-- Toggle Button -->
-    <button class="btn-toggle" @click="toggleForm">
-      {{ showForm ? 'Hide Form' : 'Show Form' }}
-    </button>
-
-    <!-- Form Container (Visible based on showForm state) -->
-    <div v-if="showForm" class="form-container">
-      <!-- <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2> -->
-      <form @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label for="priority">Priority:</label>
-          <select v-model="item.priority" id="priority" class="form-control">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="status">Status:</label>
-          <select v-model="item.status" id="status" class="form-control">
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Completed</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="itemTitle">Item Title:</label>
-          <input type="text" v-model="item.itemTitle" id="itemTitle" class="form-control" required maxlength="255" />
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Item</button>
-          <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
-        </div>
-      </form>
+    <h2>Costs for Project {{ projectId }}</h2>
+    <div v-if="costStore.loading">Loading...</div>
+    <div v-else>
+      <ul>
+        <li v-for="cost in costs" :key="cost.id">
+          {{ cost.description }}: ${{ cost.amount }}
+        </li>
+      </ul>
+      <p>Total Costs: ${{ totalCosts }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { usetaskStore } from '../../stores/taskStore';
-import { useErrorStore } from '../../stores/errorStore';
+import { onMounted, computed } from 'vue';
+import { useCostStore } from '@/stores/costStore';
 
-const taskStore = usetaskStore();
-const errorStore = useErrorStore();
-const router = useRouter();
-const route = useRoute();
+const projectId = 'your-project-id'; // Replace with actual projectId
+const costStore = useCostStore();
 
-const item = ref({ priority: 'Medium', status: 'Pending', itemTitle: '' });
-const isEditing = ref(false);
-const showForm = ref(false); // State to control form visibility
-
-onMounted(() => {
-  if (route.params.id) {
-    isEditing.value = true;
-    const existingItem = taskStore.items.find(i => i.id === route.params.id);
-    if (existingItem) {
-      item.value = { ...existingItem };
-      showForm.value = true; // Automatically show the form when editing
-    } else {
-      errorStore.showError("Item not found");
-      router.push('/progress');
-    }
-  }
+onMounted(async () => {
+  await costStore.fetchCostsByProject(projectId);
 });
 
-const handleSubmit = async () => {
-  try {
-    if (isEditing.value) {
-      await taskStore.updateItem(route.params.id, item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
-    } else {
-      await taskStore.addItem(item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
-    }
-    router.push('/tasks');
-  } catch (error) {
-    errorStore.showError(error.message || "An unexpected error occurred");
-  }
-};
-
-const cancelEdit = () => {
-  router.push('/tasks');
-};
-
-const toggleForm = () => {
-  showForm.value = !showForm.value;
-};
+const costs = computed(() => costStore.getCostsByProjectId(projectId));
+const totalCosts = computed(() => costStore.totalCostsByProjectId(projectId));
 </script>
+
 
 <style scoped>
 /* Toggle Button Styles */

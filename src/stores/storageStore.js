@@ -75,7 +75,7 @@ export const useStorageStore = defineStore('storageStore', {
     
         // Upload each image and get its download URL
         for (const file of files) {
-          const uniqueFileName = `${Date.now()}_${file.name}`;
+          const uniqueFileName = `${Date.now()}_${file.name}`;  // Ensure unique filename
           const storageReference = storageRef(storage, `projects/${projectId}/${uniqueFileName}`);
           const snapshot = await uploadBytes(storageReference, file);
           const imageUrl = await getDownloadURL(snapshot.ref);
@@ -86,10 +86,9 @@ export const useStorageStore = defineStore('storageStore', {
             fileName: file.name,    // The original file name
             uploadDate: new Date().toISOString() // The upload date as ISO string
           };
-          
     
-          // Only add the new image URL if it doesn't already exist
-          imageUrls.push(imageData); // Add the image data object to the array
+          // Add the new image data object to the array
+          imageUrls.push(imageData);  // This ensures every image has unique metadata
         }
     
         // Update Firestore with the updated imageUrls array

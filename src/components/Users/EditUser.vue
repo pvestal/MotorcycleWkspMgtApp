@@ -41,7 +41,7 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 
-const userId = route.params.id;
+let userId = route.params.id;
 
 const userData = ref({
   email: "",

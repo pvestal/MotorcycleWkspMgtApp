@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="parts.value">
     <h2>Parts List</h2>
     <ul class="part-list">
       <li v-for="part in parts" :key="part.id">
@@ -11,12 +11,15 @@
       </li>
     </ul>
   </div>
+  <div v-else>
+    <h2>No Parts Added.</h2>
+  </div>
 </template>
 
 <script setup>
-import { watchEffect, ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { usePartStore } from '../../stores/partStore';
+import { usePartStore } from '@/stores/partStore';
 
 const partStore = usePartStore();
 const router = useRouter();
@@ -33,17 +36,16 @@ const props = defineProps({
   }
 });
 
-// onMounted(async () => {
-//   if (!parts.value.length || parts.value === undefined) {
-//     await partStore.fetchPartsByProjectId(props.projectId);
-//   }
-// });
-
-watchEffect(() => {
+onMounted(async () => {
   if (props.projectId) {
-    parts.value = partStore.fetchPartsByProjectId(props.projectId);
+    // Fetch parts just for the project
+    parts.value = await partStore.fetchPartsByProjectId(props.projectId);
+  } else {
+    // Fetch all tasks (if applicable)
+    parts.value = await partStore.fetchParts();
   }
 });
+
 
 const navigateToEdit = (id) => {
   router.push(`/editpart/${id}`);
