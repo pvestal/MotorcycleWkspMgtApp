@@ -1,36 +1,31 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import Firebase auth
-import { useUserStore } from './stores/userStore'; // Import Pinia userStore
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import App from './App.vue';
 import router from './router';
+import { useUserStore } from './stores/userStore';
 
 const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);
 
-// Initialize Firebase Auth
 const auth = getAuth();
 
-// Firebase auth state listener
-onAuthStateChanged(auth, (user) => {
-    const userStore = useUserStore();
+onAuthStateChanged(auth, async (user) => {
+  const userStore = useUserStore();
 
-    if (user) {
-        // User is signed in, call setUser with user data
-        userStore.setUser({
-            uid: user.uid,
-            displayName: user.displayName,
-            email: user.email,
-            photoURL: user.photoURL,
-            role: user.role,
-        });
+  if (user) {
+    const isAnonymous = user.isAnonymous;
+    if (isAnonymous) {
+      await userStore.loginAnonymously();
     } else {
-        // User is signed out, clear the user state
-        userStore.clearUser();
+      await userStore.fetchUser();
     }
+  } else {
+    await userStore.loginAnonymously();
+  }
 });
 
 app.mount('#app');

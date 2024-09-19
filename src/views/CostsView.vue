@@ -1,29 +1,33 @@
 <template>
     <div>
-        <TodoForm/>
-        <h2>App progress log..</h2>
-        <TodoList />
-
+      <h1>Costs for Projects</h1>
+      <ListCosts v-if="costs.length" :costs="costs"/>
     </div>
-</template> 
+  </template>
+  
+  <script setup>
+  import { onMounted, ref } from 'vue';
+  import { useCostStore } from '@/stores/costStore';
+  import ListCosts from '@/components/Costs/ListCosts.vue';
+  
+  const costStore = useCostStore();
+const costs = ref(costStore.costs);
 
-<script setup>
-import TodoForm from '../components/progressLog/TodoForm.vue';
-import TodoList from '../components/progressLog/TodoList.vue';
+onMounted(async (projectId) => {
+    costStore.totalCostsByProjectId(projectId);
+});
+  </script>
 
-</script>
-
-<style>
-
+<style scoped>
 /* Container for the ordered list */
-ol.todo-list {
+ol.task-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
     counter-reset: item;
 }
 
-.todo-list li {
+.task-list li {
     display: flex;
     align-items: center;
     padding: 10px;
@@ -34,7 +38,7 @@ ol.todo-list {
     counter-increment: item;
 }
 
-.todo-list li::before {
+.task-list li::before {
     content: counter(item) ".";
     margin-right: 10px;
     font-weight: bold;

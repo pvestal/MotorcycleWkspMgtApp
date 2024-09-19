@@ -1,44 +1,33 @@
 <template>
   <div v-if="userProfile" class="profile-container">
-    <h2>User Profile</h2>
+    <h1>User Profile</h1>
+    <button @click="logout"><span class="material-symbols-outlined">logout</span></button>
     <div class="profile-user-email"><span class="material-symbols-outlined">email</span> {{ userProfile.email }}</div>
     <img :src="userProfile.photoURL" alt="User Photo" />
     <br>
-    <div class="profile-user-role"><strong>Role:</strong> {{ userProfile.role }}</div>
-    <div class="profile-user-last-login"><strong>Last Login:</strong> {{ formatTimestamp(userProfile.lastSignInTime) }}</div>
-    <button class="logout" @click="logout">Logout</button>
-<br>
-    <div>
-      <button @click="handleGetUsers">Fetch Users</button>
-      <p>allUsers:</p>
-      <ol v-if="allUsers.length">
-        <li v-for="user in allUsers" :key="user.uid">
-          Name: {{ user.displayName }} Email: {{ user.email }} Role: {{ user.role }} Photo: <img :src="user.photoURL" alt="user photo" style="width: 30px; height: 30px; border-radius: 50%;" />
-        </li>
-      </ol>
-    </div>
+    <div class="profile-user-role"><span class="material-symbols-outlined">person</span> Role: {{ userProfile.role }}</div>
+    <div class="profile-user-last-login"><span class="material-symbols-outlined">event</span> Last Login: {{ formatTimestamp(userProfile.lastLoginAt) }}</div>
+
+    <br>
+    <userProfileComponent v-if="isAuthenticated" :user="userProfile" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { signOut } from 'firebase/auth';
-import {auth } from '../fbConfig'
 import { useUserStore } from '../stores/userStore';
+import userProfileComponent from '@/components/Users/userProfileComponent.vue';
 
 const userStore = useUserStore();
 const router = useRouter();
 
 const userProfile = ref(null);  // Ref to hold user profile data
-
-const handleGetUsers = async () => {
-  await userStore.fetchAllUsers();
-}
+const isAuthenticated = ref(userStore.isAuthenticated);
 
 // Fetch user data from Firestore based on authenticated user
 const loadUserProfile = async () => {
-  const currentUser = auth.currentUser;
+  const currentUser = userStore.currentUser;
   if (currentUser) {
     await userStore.fetchUser();  // Fetch user data from Firestore
     userProfile.value = userStore.currentUser;
@@ -47,10 +36,11 @@ const loadUserProfile = async () => {
 
 // Load user profile data when component mounts
 onMounted(async () => {
+  userStore.fetchUser();
   await loadUserProfile();
 });
 
-const allUsers = computed(() => userStore.allUsers);
+// const allUsers = computed(() => userStore.allUsers);
 
 const logout = async () => {
   await userStore.logout();
@@ -119,7 +109,7 @@ const formatTimestamp = (timestamp) => {
 
 .profile-container button {
   display: block;
-  width: 100%;
+  /* width: 100%; */
   padding: 10px;
   border: none;
   border-radius: 4px;
@@ -127,10 +117,14 @@ const formatTimestamp = (timestamp) => {
   color: white;
   font-size: 16px;
   cursor: pointer;
-  text-align: center;
+  text-align: right;
 }
 
 .profile-container button:hover {
   background-color: #0056b3;
+}
+
+.material-symbols-outlined {
+  vertical-align: -5px;
 }
 </style>

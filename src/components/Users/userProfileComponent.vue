@@ -1,6 +1,6 @@
 <template>
     <div>
-      <h3>User Details</h3>
+      <!-- <h3>User Details</h3> -->
       <!-- Toggle Button -->
       <button @click="toggleDetails">{{ detailsVisible ? 'Hide' : 'Show' }} Details</button>
       

@@ -1,37 +1,38 @@
 <template>
   <div>
     <!-- Toggle Button -->
-    <button class="btn-toggle" @click="toggleForm">
+    <button class="btn-toggle" @click="togglePartForm">
       {{ showForm ? 'Hide Form' : 'Show Form' }}
     </button>
 
     <!-- Form Container (Visible based on showForm state) -->
-    <div v-if="showForm" class="form-container">
-      <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Item</h2>
+    <div v-if="showPartForm" class="form-container">
+      <!-- <h2 class="form-title">{{ isEditing ? 'Edit' : 'Add' }} Part</h2> -->
       <form @submit.prevent="handleSubmit">
+
         <div class="form-group">
-          <label for="priority">Priority:</label>
-          <select v-model="item.priority" id="priority" class="form-control">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
+          <label for="partName">Part Name:</label>
+          <input type="text" v-model="part.partName" id="partName" class="form-control" required maxlength="255" />
         </div>
         <div class="form-group">
-          <label for="status">Status:</label>
-          <select v-model="item.status" id="status" class="form-control">
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Completed</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="itemTitle">Item Title:</label>
-          <input type="text" v-model="item.itemTitle" id="itemTitle" class="form-control" required maxlength="255" />
-        </div>
-        
+        <label for="partStatus">Part Status:</label>
+        <select v-model="part.status" id="partStatus" class="form-control">
+          <option value="Ordered">Ordered</option>
+          <option value="Shipped">Shipped</option>
+          <option value="BackOrder">BackOrder</option>
+          <option value="Installed">Installed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="partPriority">Priority:</label>
+        <select v-model="part.priority" id="partPriority" class="form-control">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
         <div class="form-actions">
-          <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Item</button>
+          <button type="submit" class="btn-submit">{{ isEditing ? 'Update' : 'Add' }} Part</button>
           <button type="button" class="btn-cancel" @click="cancelEdit">Cancel</button>
         </div>
       </form>
@@ -42,28 +43,28 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useProgressStore } from '../../stores/progressStore';
+import { usePartStore } from '../../stores/partStore';
 import { useErrorStore } from '../../stores/errorStore';
 
-const progressStore = useProgressStore();
+const partStore = usePartStore();
 const errorStore = useErrorStore();
 const router = useRouter();
 const route = useRoute();
 
-const item = ref({ priority: 'Medium', status: 'Pending', itemTitle: '' });
+const part = ref({ priority: 'Medium', status: 'Ordered', partName: '' });
 const isEditing = ref(false);
-const showForm = ref(false); // State to control form visibility
+const showPartForm = ref(false); // State to control form visibility
 
 onMounted(() => {
   if (route.params.id) {
     isEditing.value = true;
-    const existingItem = progressStore.items.find(i => i.id === route.params.id);
-    if (existingItem) {
-      item.value = { ...existingItem };
-      showForm.value = true; // Automatically show the form when editing
+    const existingpart = partStore.parts.find(i => i.id === route.params.id);
+    if (existingpart) {
+      part.value = { ...existingpart };
+      showPartForm.value = true; // Automatically show the form when editing
     } else {
-      errorStore.showError("Item not found");
-      router.push('/progress');
+      errorStore.showError("part not found");
+      router.push('/projects');
     }
   }
 });
@@ -71,24 +72,24 @@ onMounted(() => {
 const handleSubmit = async () => {
   try {
     if (isEditing.value) {
-      await progressStore.updateItem(route.params.id, item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
+      await partStore.updatePart(route.params.id, part.value);
+      this.part = { priority: 'Medium', status: 'Ordered', partName: '' }
     } else {
-      await progressStore.addItem(item.value);
-      this.item = { priority: 'Medium', status: 'Pending', itemTitle: '' }
+      await partStore.addPart(part.value);
+      this.part = { priority: 'Medium', status: 'Ordered', partName: '' }
     }
-    router.push('/progress');
+    router.push('/projects');
   } catch (error) {
     errorStore.showError(error.message || "An unexpected error occurred");
   }
 };
 
 const cancelEdit = () => {
-  router.push('/progress');
+  router.push('/projects');
 };
 
-const toggleForm = () => {
-  showForm.value = !showForm.value;
+const togglePartForm = () => {
+  showPartForm.value = !showPartForm.value;
 };
 </script>
 
