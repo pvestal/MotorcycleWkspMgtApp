@@ -1,150 +1,243 @@
 <template>
-  <div>
-    <h2>Costs for Project {{ projectId }}</h2>
-    <div v-if="costStore.loading">Loading...</div>
-    <div v-else>
-      <ul>
-        <li v-for="cost in costs" :key="cost.id">
-          {{ cost.description }}: ${{ cost.amount }}
-        </li>
-      </ul>
-      <p>Total Costs: ${{ totalCosts }}</p>
+  <div class="form-container">
+    <h2 class="form-title">{{ projectName ? `Add Cost for Project: ${projectName}` : (isEditing ? 'Edit Cost' : 'Add New Cost') }}</h2>
+    
+    <!-- Loading state -->
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
     </div>
+    
+    <!-- Error message -->
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
+    
+    <!-- Cost form -->
+    <form v-if="!loading" @submit.prevent="handleSubmit">
+      <!-- Description field -->
+      <div class="form-group">
+        <label for="description" class="form-label required-field">Description</label>
+        <input 
+          type="text" 
+          id="description" 
+          v-model="cost.description" 
+          class="form-input"
+          required
+        />
+      </div>
+      
+      <div class="form-row">
+        <!-- Amount field -->
+        <div class="form-group">
+          <label for="amount" class="form-label required-field">Amount ($)</label>
+          <input 
+            type="number" 
+            id="amount" 
+            v-model="cost.amount" 
+            step="0.01" 
+            min="0.01" 
+            class="form-input"
+            required
+          />
+        </div>
+        
+        <!-- Category field -->
+        <div class="form-group">
+          <label for="category" class="form-label">Category</label>
+          <select 
+            id="category" 
+            v-model="cost.category" 
+            class="form-select"
+          >
+            <option value="Parts">Parts</option>
+            <option value="Labor">Labor</option>
+            <option value="Tools">Tools</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Date field -->
+      <div class="form-group">
+        <label for="date" class="form-label required-field">Date</label>
+        <input 
+          type="date" 
+          id="date" 
+          v-model="cost.date" 
+          class="form-input"
+          required
+        />
+      </div>
+      
+      <!-- Form buttons -->
+      <div class="form-actions">
+        <button 
+          type="button" 
+          @click="cancel" 
+          class="btn btn-secondary"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+        >
+          {{ isEditing ? 'Update' : 'Save' }} Cost
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useCostStore } from '@/stores/costStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { useErrorStore } from '@/stores/errorStore';
+import '@/assets/form-styles.css';
 
-const projectId = 'your-project-id'; // Replace with actual projectId
-const costStore = useCostStore();
-
-onMounted(async () => {
-  await costStore.fetchCostsByProject(projectId);
+// Props
+const props = defineProps({
+  projectId: {
+    type: String,
+    required: true
+  },
+  costId: {
+    type: String,
+    default: null
+  }
 });
 
-const costs = computed(() => costStore.getCostsByProjectId(projectId));
-const totalCosts = computed(() => costStore.totalCostsByProjectId(projectId));
+// Setup router and stores
+const router = useRouter();
+const costStore = useCostStore();
+const projectStore = useProjectStore();
+const errorStore = useErrorStore();
+
+// State variables
+const loading = ref(true);
+const error = ref('');
+const projectName = ref('');
+const isEditing = ref(false);
+const cost = ref({
+  description: '',
+  amount: '',
+  category: 'Parts',
+  date: new Date().toISOString().slice(0, 10),
+  projectId: props.projectId
+});
+
+// Form validation
+const validateForm = () => {
+  // Validate description
+  if (!cost.value.description.trim()) {
+    error.value = 'Description is required';
+    return false;
+  }
+  
+  // Validate amount
+  const numAmount = parseFloat(cost.value.amount.toString());
+  if (isNaN(numAmount) || numAmount <= 0) {
+    error.value = 'Please enter a valid amount greater than zero';
+    return false;
+  }
+  
+  // Validate date
+  if (!cost.value.date) {
+    error.value = 'Date is required';
+    return false;
+  }
+  
+  return true;
+};
+
+// Load project and cost data
+onMounted(async () => {
+  try {
+    // Make sure we have project data
+    if (projectStore.projects.length === 0) {
+      await projectStore.fetchProjects();
+    }
+    
+    // Get project name
+    const project = projectStore.getProjectById(props.projectId);
+    if (project) {
+      projectName.value = project.projectName;
+    }
+    
+    // If costId is provided, load existing cost data
+    if (props.costId) {
+      isEditing.value = true;
+      
+      // Make sure we have cost data
+      if (costStore.costs.length === 0) {
+        await costStore.fetchCosts();
+      }
+      
+      const existingCost = costStore.costs.find(c => c.id === props.costId);
+      
+      if (existingCost) {
+        // Format date properly if it exists
+        const formattedDate = existingCost.date ? 
+          (typeof existingCost.date === 'string' ? existingCost.date : new Date(existingCost.date).toISOString().slice(0, 10)) : 
+          new Date().toISOString().slice(0, 10);
+        
+        cost.value = {
+          description: existingCost.description || '',
+          amount: existingCost.amount || '',
+          category: existingCost.category || 'Parts',
+          date: formattedDate,
+          projectId: existingCost.projectId || props.projectId
+        };
+      } else {
+        error.value = 'Cost not found';
+        setTimeout(() => {
+          router.push('/costs');
+        }, 3000);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading data:', err);
+    error.value = 'Failed to load data. Please try again.';
+  } finally {
+    loading.value = false;
+  }
+});
+
+// Handle form submission
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+  
+  error.value = '';
+  loading.value = true;
+  
+  try {
+    // Ensure projectId is set
+    cost.value.projectId = props.projectId;
+    
+    // Save cost
+    if (isEditing.value && props.costId) {
+      await costStore.updateCost(props.costId, cost.value);
+      errorStore.showNotification('Cost updated successfully', 'success');
+    } else {
+      await costStore.addCost(cost.value);
+      errorStore.showNotification('Cost added successfully', 'success');
+    }
+    
+    // Navigate back to the project view or costs list
+    router.push('/costs');
+  } catch (err) {
+    console.error('Error saving cost:', err);
+    error.value = 'Failed to save cost. Please try again.';
+    errorStore.showError(error.value);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Cancel and go back
+const cancel = () => {
+  router.push('/costs');
+};
 </script>
-
-
-<style scoped>
-/* Toggle Button Styles */
-.btn-toggle {
-  display: block;
-  margin: 20px auto;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  background-color: #007bff;
-  color: white;
-  cursor: pointer;
-  text-align: center;
-}
-
-.btn-toggle:hover {
-  background-color: #0056b3;
-}
-
-/* Form Styles */
-.form-container {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-}
-
-.form-title {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #555;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: space-between;
-}
-
-.btn-submit,
-.btn-cancel {
-  width: 48%;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.btn-submit {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-submit:hover {
-  background-color: #0056b3;
-}
-
-.btn-cancel {
-  background-color: #ccc;
-  color: #333;
-}
-
-.btn-cancel:hover {
-  background-color: #999;
-}
-
-/* Mobile-specific styles */
-@media (max-width: 600px) {
-  .form-container {
-    padding: 15px;
-  }
-
-  .form-title {
-    font-size: 20px;
-  }
-
-  .form-group {
-    margin-bottom: 12px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn-submit,
-  .btn-cancel {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .btn-submit {
-    margin-bottom: 0;
-  }
-}
-</style>

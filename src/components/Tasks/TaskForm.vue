@@ -1,269 +1,299 @@
 <template>
-  <div class="task-form-container">
-    <h2>{{ isEditing ? 'Edit Task' : 'Add Task' }} 
-      <span v-if="projectId && projectName"> - Project: {{ projectName }} - Id: {{ projectId }}</span>
+  <div class="form-container">
+    <h2 class="form-title">
+      {{ isEditing ? 'Edit Task' : 'Add Task' }}
+      <span v-if="projectId && projectName" class="ml-2 text-sm font-normal text-gray-500">
+        Project: {{ projectName }} ({{ projectId }})
+      </span>
     </h2>
 
-    <form @submit.prevent="handleTaskSubmit">
+    <!-- Loading state -->
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <form v-if="!loading" @submit.prevent="handleTaskSubmit">
+      <!-- Task Title -->
       <div class="form-group">
-        <label for="taskTitle">Task Title:</label>
-        <input type="text" v-model="taskData.taskTitle" id="taskTitle" class="form-control" required />
-      </div>
-      <div class="form-group">
-        <label for="priority">Priority:</label>
-        <select v-model="taskData.priority" id="priority" class="form-control">
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="status">Status:</label>
-        <select v-model="taskData.status" id="status" class="form-control">
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="nbrHrs">Time: (number of hours)</label>
-        <input type="number" v-model="taskData.nbrHrs" id="nbrHrs" class="form-control" required />
+        <label for="taskTitle" class="form-label required-field">Task Title</label>
+        <input 
+          type="text" 
+          v-model="taskData.taskTitle" 
+          id="taskTitle" 
+          class="form-input" 
+          required 
+        />
       </div>
 
+      <div class="form-row">
+        <!-- Task Priority -->
+        <div class="form-group">
+          <label for="priority" class="form-label">Priority</label>
+          <select 
+            v-model="taskData.priority" 
+            id="priority" 
+            class="form-select"
+          >
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <!-- Task Status -->
+        <div class="form-group">
+          <label for="status" class="form-label">Status</label>
+          <select 
+            v-model="taskData.status" 
+            id="status" 
+            class="form-select"
+          >
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Hours Required -->
+      <div class="form-group">
+        <label for="nbrHrs" class="form-label required-field">
+          Time (hours)
+        </label>
+        <input 
+          type="number" 
+          v-model="taskData.nbrHrs" 
+          id="nbrHrs" 
+          min="0.1" 
+          step="0.1" 
+          class="form-input" 
+          required 
+        />
+      </div>
+
+      <!-- Description (Optional) -->
+      <div class="form-group">
+        <label for="description" class="form-label">
+          Description
+        </label>
+        <textarea 
+          v-model="taskData.description" 
+          id="description" 
+          rows="4" 
+          class="form-textarea"
+          placeholder="Add any additional details about this task"
+        ></textarea>
+        <div class="form-helper-text">This field is optional</div>
+      </div>
+
+      <!-- Form Actions -->
       <div class="form-actions">
-        <button type="submit" class="btn-submit">{{ isEditing ? 'Update Task' : 'Add Task' }}</button>
-        <button type="button" class="btn-cancel" @click="cancelTaskEdit">Cancel</button>
+        <button 
+          type="button" 
+          @click="cancelTaskEdit" 
+          class="btn btn-secondary"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+        >
+          {{ isEditing ? 'Update Task' : 'Add Task' }}
+        </button>
       </div>
     </form>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, defineProps } from 'vue';
+<script setup lang="ts">
+/**
+ * TaskForm Component
+ * 
+ * This component handles the creation and editing of tasks for a project.
+ * It includes validation and provides a clean interface for task management.
+ */
+
+import { ref, onMounted } from 'vue';
 import { useTaskStore } from '@/stores/taskStore';
 import { useErrorStore } from '@/stores/errorStore';
 import { useRouter } from 'vue-router';
+import { Task } from '@/types/interfaces';
+import '@/assets/form-styles.css';
 
-const { projectId, projectName, taskId } = defineProps({
-  projectId: {
-    type: String,
-    required: true,
-  },
-  projectName: {
-    type: String,
-    required: true,
-  },
-  taskId: {
-    type: String,
-    default: null,
-  },
+// Props definition
+interface Props {
+  projectId: string;
+  projectName: string;
+  taskId?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  taskId: undefined
 });
 
+// Setup stores and router
 const router = useRouter();
 const taskStore = useTaskStore();
 const errorStore = useErrorStore();
 
+// Component state
 const isEditing = ref(false);
+const loading = ref(false);
+const error = ref('');
 
-const taskData = ref({
+// Define task data structure with TypeScript interface
+interface TaskFormData extends Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'> {
+  description?: string;
+}
+
+// Initialize task data with default values
+const taskData = ref<TaskFormData>({
   taskTitle: '',
   priority: 'Medium',
   status: 'Pending',
   nbrHrs: 1,
-  projectId,
-  projectName,
+  projectId: props.projectId,
+  projectName: props.projectName,
+  description: ''
 });
 
-onMounted(() => {
-  if (taskId) {
+/**
+ * Load existing task data if in edit mode
+ */
+onMounted(async () => {
+  // Only show loading state if we're editing
+  if (props.taskId) {
+    loading.value = true;
     isEditing.value = true;
-    const existingTask = taskStore.getTasksByProjectId(taskId);
-    if (existingTask) {
-      taskData.value = { ...existingTask };
-    } else {
-      errorStore.showError('Task not found');
+    
+    try {
+      // If we don't have any tasks in the store, fetch them first
+      if (taskStore.tasks.length === 0) {
+        await taskStore.fetchTasks();
+      }
+      
+      // Get task by ID
+      const existingTask = taskStore.tasks.find(task => task.id === props.taskId);
+      
+      if (existingTask) {
+        // Copy task data to form
+        taskData.value = { 
+          ...existingTask,
+          // Ensure nbrHrs is a number (might be stored as string in Firestore)
+          nbrHrs: typeof existingTask.nbrHrs === 'string' 
+            ? parseFloat(existingTask.nbrHrs) 
+            : existingTask.nbrHrs || 1
+        };
+      } else {
+        // If task not found after fetching
+        error.value = 'Task not found';
+        setTimeout(() => {
+          router.push(`/viewProject/${props.projectId}`);
+        }, 3000);
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'An unknown error occurred while loading the task';
+      errorStore.showError(error.value);
+    } finally {
+      loading.value = false;
     }
   }
 });
 
+/**
+ * Validate form data
+ */
+const validateForm = (): boolean => {
+  error.value = '';
+  
+  // Validate task title
+  if (!taskData.value.taskTitle.trim()) {
+    error.value = 'Task title is required';
+    return false;
+  }
+  
+  // Convert nbrHrs to number if it's a string
+  if (typeof taskData.value.nbrHrs === 'string') {
+    taskData.value.nbrHrs = parseFloat(taskData.value.nbrHrs);
+  }
+  
+  // Validate number of hours
+  if (isNaN(taskData.value.nbrHrs) || taskData.value.nbrHrs <= 0) {
+    error.value = 'Please enter a valid number of hours';
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Submit form handler - creates or updates a task
+ */
 const handleTaskSubmit = async () => {
+  if (!validateForm()) return;
+  
+  loading.value = true;
+  error.value = '';
+  
   try {
-    taskData.value.projectId = projectId;
-
-    if (isEditing.value) {
-      await taskStore.updateTask(taskId, taskData.value);
+    // Ensure projectId and projectName are set
+    taskData.value.projectId = props.projectId;
+    taskData.value.projectName = props.projectName;
+    
+    if (isEditing.value && props.taskId) {
+      // Update existing task
+      await taskStore.updateTask(props.taskId, taskData.value);
+      errorStore.showNotification('Task updated successfully', 'success');
     } else {
+      // Create new task
       await taskStore.addTask(taskData.value);
+      errorStore.showNotification('Task added successfully', 'success');
     }
-
+    
+    // Reset form and navigate back to project view
     clearTaskData();
-      // Navigate back to the project view
-  router.push({
-    name: 'ViewProject',
-    params: { id: projectId },
-  });
-  } catch (error) {
-    errorStore.showError('An error occurred:', error);
+    router.push({
+      name: 'viewProject',
+      params: { id: props.projectId }
+    });
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'An unknown error occurred while saving the task';
+    errorStore.showError(error.value);
+  } finally {
+    loading.value = false;
   }
 };
 
+/**
+ * Cancel editing and navigate back to project view
+ */
 const cancelTaskEdit = () => {
   clearTaskData();
-    // Navigate back to the project view
-    router.push({
-    name: 'ViewProject',
-    params: { id: projectId },
+  router.push({
+    name: 'viewProject',
+    params: { id: props.projectId }
   });
 };
 
+/**
+ * Reset the form to its initial state
+ */
 const clearTaskData = () => {
   taskData.value = {
     taskTitle: '',
     priority: 'Medium',
     status: 'Pending',
     nbrHrs: 1,
-    projectId,
-    projectName,
+    projectId: props.projectId,
+    projectName: props.projectName,
+    description: ''
   };
   isEditing.value = false;
 };
-
-console.log('TaskForm props:', projectId, projectName, taskId);
 </script>
-
-
-<style scoped>
-/* Toggle Button Styles */
-.btn-toggle {
-  display: block;
-  margin: 20px auto;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  background-color: #007bff;
-  color: white;
-  cursor: pointer;
-  text-align: center;
-}
-
-.btn-toggle:hover {
-  background-color: #0056b3;
-}
-
-/* Form Styles */
-.form-container {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-}
-
-.form-title {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #555;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: space-between;
-}
-
-.btn-submit,
-.btn-cancel {
-  width: 48%;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.btn-submit {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-submit:hover {
-  background-color: #0056b3;
-}
-
-.btn-cancel {
-  background-color: #ccc;
-  color: #333;
-}
-
-.btn-cancel:hover {
-  background-color: #999;
-}
-
-.btn-add-task {
-  display: block;
-  margin-bottom: 20px;
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-add-task:hover {
-  background-color: #218838;
-}
-
-
-/* Mobile-specific styles */
-@media (max-width: 600px) {
-  .form-container {
-    padding: 15px;
-  }
-
-  .form-title {
-    font-size: 20px;
-  }
-
-  .form-group {
-    margin-bottom: 12px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn-submit,
-  .btn-cancel {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .btn-submit {
-    margin-bottom: 0;
-  }
-}
-</style>
