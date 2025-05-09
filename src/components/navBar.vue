@@ -44,6 +44,7 @@
           <li @click="navigate('/projects')"><span class="material-symbols-outlined">emoji_objects</span> Projects</li>
           <li @click="navigate('/tasks')"><span class="material-symbols-outlined">task</span> Tasks</li>
           <li @click="navigate('/parts')"><span class="material-symbols-outlined">handyman</span> Parts</li>
+          <li @click="navigate('/part-catalog')"><span class="material-symbols-outlined">menu_book</span> Part Catalog</li>
           <li @click="navigate('/costs')"><span class="material-symbols-outlined">paid</span> Costs</li>
           <li @click="navigate('/inventory')"><span class="material-symbols-outlined">inventory_2</span> Inventory</li>
         </ul>

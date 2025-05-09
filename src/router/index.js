@@ -32,6 +32,10 @@ import AddCost from '@/components/Costs/AddCost.vue';
 import EditCost from '@/components/Costs/EditCost.vue';
 import ViewCost from '@/components/Costs/ViewCost.vue';
 
+// Import Part API related views
+import PartCatalogView from '@/views/PartCatalogView.vue';
+import PartDetailsView from '@/views/PartDetailsView.vue';
+
 
 const routes = [
   { path: '/', name: 'HomeView', component: HomeView },
@@ -55,6 +59,8 @@ const routes = [
   { path: '/viewProject/:id', name: 'viewProject', component: ViewProject, props: true, meta: { requiresAuth: true,  }},
 
   { path: '/parts', name: 'listParts', component: PartsView, meta: { requiresAuth: true, requiresAdmin: true }},
+  { path: '/part-catalog', name: 'partCatalog', component: PartCatalogView, meta: { requiresAuth: true, requiresAdmin: false }},
+  { path: '/part-details/:id', name: 'partDetails', component: PartDetailsView, props: true, meta: { requiresAuth: true, requiresAdmin: false }},
   { path: '/addPart', name: 'addPart', component: AddPart, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/addPart/:projectId', name: 'addPartWithProject', component: AddPart, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editPart/:id', name: 'editPart', component: EditPart, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
