@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { db, Timestamp } from "../fbConfig";
-import { collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs } from "firebase/firestore";
+import { db } from "../fbConfig";
+import { collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { useErrorStore } from "./errorStore";
 import { useUserStore } from "./userStore";
 

@@ -50,6 +50,7 @@ export const useTaskStore = defineStore('taskStore', {
           
               // Append the project-specific tasks to the existing tasks array
               this.tasks = [...this.tasks, ...projectTasks];
+              return projectTasks;
             } catch (error) {
               errorStore.showError("An error occurred fetching tasks: " + error.message);
             }

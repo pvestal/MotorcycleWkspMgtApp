@@ -1,17 +1,20 @@
 <template>
   <div>
     <!-- Show message if no tasks are available -->
-    <div v-if="tasks.length === 0">
-      <p>No tasks available to display.</p>
+    <div class="tasksByProject" v-if="tasks.length === 0">
+      <p>No tasks available to display for {{ projectName }}.</p>
+        <button @click="navigateToAddTask" class="action-button add-task-button">
+          <span class="material-symbols-outlined">add_circle</span> Add Task
+        </button>
     </div>
     <div class="tasksByProject" v-else>
       <!-- Header Container -->
       <div class="header">
         <h1 v-if="projectName">Project: {{ projectName }}</h1>
         <h1 v-else>Project Tasks</h1>
-        <!-- <button @click="navigateToAddTask" class="action-button add-task-button">
+        <button @click="navigateToAddTask" class="action-button add-task-button">
           <span class="material-symbols-outlined">add_circle</span> Add Task
-        </button> -->
+        </button>
       </div>
       <ul class="task-list">
         <li v-for="task in tasks" :key="task.id">
@@ -90,15 +93,14 @@ const deleteTask = async (taskId) => {
   // Implement delete logic here
 };
 
-const navigateToAddTask = () => {
-  router.push({
-    name: 'AddTask',
-    params: {
-      projectId,
-      projectName,
-    },
-  });
+const emitAddTask = () => {
+  const newTask = {
+    taskName: 'New Task',
+    projectId: props.projectId,
+  };
+  emit('addTask', newTask);
 };
+
 </script>
 
 <style scoped>

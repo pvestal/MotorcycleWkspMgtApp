@@ -1,12 +1,33 @@
 <template>
   <div class="project-detail-container max-w-7xl mx-auto p-6">
-    <div v-if="project">
-      <!-- Back and Edit buttons -->
-      <div class="mb-6 flex justify-between">
-        <button @click="goBack" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading project details...</p>
+    </div>
+
+    <div v-else-if="!project" class="not-found">
+      <div class="not-found-icon">❓</div>
+      <h3>Project Not Found</h3>
+      <p>The requested project could not be found or you don't have permission to view it.</p>
+      <button class="btn primary" @click="goBack">Go Back</button>
+    </div>
+
+    <div v-else>
+      <!-- Header with navigation actions -->
+      <div class="header-actions mb-6 flex justify-between items-center">
+        <button @click="goBack" class="btn secondary flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+          </svg>
           Back
         </button>
-        <button @click="toggleEditMode" class="px-4 py-2 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700">
+        <button 
+          @click="toggleEditMode" 
+          class="btn primary flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
           {{ isEditing ? 'Cancel' : 'Edit' }}
         </button>
       </div>
@@ -21,51 +42,94 @@
           @cancelEdit="toggleEditMode"
         />
       </div>
-      <div v-else class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-        <!-- Display project details -->
-        <div class="px-6 py-4 bg-blue-50 border-b border-blue-100">
-          <h1 v-if="project.projectName" class="text-2xl font-bold text-gray-800">{{ project.projectName }}</h1>
-          <p class="text-sm text-gray-500">Project ID: {{ projectId }}</p>
+      <div v-else class="project-content bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
+        <!-- Project header -->
+        <div class="project-header p-6 bg-blue-50 dark:bg-blue-900 border-b border-blue-100 dark:border-blue-800">
+          <div class="project-id font-mono text-sm text-gray-500 dark:text-gray-400 mb-1">Project #{{ projectId.substring(0, 8) }}</div>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ project.projectName }}</h1>
+          
+          <div class="flex flex-wrap gap-2 mt-2">
+            <span 
+              :class="{
+                'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100': project.status === 'Completed',
+                'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100': project.status === 'In Progress',
+                'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100': project.status === 'On Hold'
+              }"
+              class="status-badge px-3 py-1 rounded-full text-sm font-medium"
+            >
+              {{ project.status }}
+            </span>
+          </div>
         </div>
 
-        <div class="project-meta px-6 py-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p><strong>Status:</strong> 
-                <span 
-                  :class="{
-                    'bg-green-100 text-green-800': project.status === 'Completed',
-                    'bg-blue-100 text-blue-800': project.status === 'In Progress',
-                    'bg-yellow-100 text-yellow-800': project.status === 'On Hold'
-                  }"
-                  class="px-2 py-1 rounded-full text-xs font-medium ml-2"
-                >
-                  {{ project.status }}
-                </span>
-              </p>
-              <p><strong>Owner:</strong> {{ project.owner }}</p>
-              <p><strong>Start Date:</strong> {{ formatDate(project.startDate) }}</p>
-              <p v-if="project.endDate"><strong>End Date:</strong> {{ formatDate(project.endDate) }}</p>
-            </div>
-            <div v-if="project.vin">
-              <p><strong>VIN:</strong> {{ project.vin }}</p>
-              <p><strong>Make:</strong> {{ project.make }}</p>
-              <p><strong>Model:</strong> {{ project.model }}</p>
-              <p><strong>Year:</strong> {{ project.year }}</p>
-            </div>
+        <!-- Project metadata -->
+        <div class="project-meta grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-gray-50 dark:bg-gray-700">
+          <div class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Owner</div>
+            <div class="meta-value font-medium">{{ project.owner }}</div>
+          </div>
+          
+          <div class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Start Date</div>
+            <div class="meta-value font-medium">{{ formatDate(project.startDate) }}</div>
+          </div>
+          
+          <div v-if="project.endDate" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">End Date</div>
+            <div class="meta-value font-medium">{{ formatDate(project.endDate) }}</div>
+          </div>
+          
+          <div v-if="project.vin" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">VIN</div>
+            <div class="meta-value font-medium">{{ project.vin }}</div>
+          </div>
+          
+          <div v-if="project.make" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Make</div>
+            <div class="meta-value font-medium">{{ project.make }}</div>
+          </div>
+          
+          <div v-if="project.model" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Model</div>
+            <div class="meta-value font-medium">{{ project.model }}</div>
+          </div>
+          
+          <div v-if="project.year" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Year</div>
+            <div class="meta-value font-medium">{{ project.year }}</div>
+          </div>
+          
+          <div v-if="project.createdAt" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Created</div>
+            <div class="meta-value font-medium">{{ formatDate(project.createdAt) }}</div>
+          </div>
+          
+          <div v-if="project.updatedAt" class="meta-item">
+            <div class="meta-label text-sm text-gray-500 dark:text-gray-400">Last Updated</div>
+            <div class="meta-value font-medium">{{ formatDate(project.updatedAt) }}</div>
+          </div>
+        </div>
+        
+        <!-- Project Description if available -->
+        <div v-if="project.description" class="project-description p-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+            Description
+          </h3>
+          <div class="description-content text-gray-700 dark:text-gray-300 whitespace-pre-line">
+            {{ project.description }}
           </div>
         </div>
       </div>
 
       <!-- Tasks Section -->
-      <div class="section mb-6 bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="header px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-700">Tasks</h2>
+      <div class="section mb-6 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div class="section-header px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Tasks</h2>
           <button 
             @click="handleAddTask" 
-            class="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+            class="btn primary flex items-center gap-2"
           >
-            <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
             </svg>
             Add Task
@@ -125,14 +189,14 @@
       </div>
 
       <!-- Parts Section -->
-      <div class="section mb-6 bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="header px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-700">Parts</h2>
+      <div class="section mb-6 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div class="section-header px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Parts</h2>
           <button 
             @click="handleAddPart" 
-            class="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm"
+            class="btn primary flex items-center gap-2"
           >
-            <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
             </svg>
             Add Part
@@ -190,14 +254,14 @@
       </div>
 
       <!-- Costs Section -->
-      <div class="section mb-6 bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="header px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-700">Costs</h2>
+      <div class="section mb-6 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div class="section-header px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Costs</h2>
           <button 
             @click="handleAddCost" 
-            class="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
+            class="btn primary flex items-center gap-2"
           >
-            <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
             </svg>
             Add Cost
@@ -251,14 +315,14 @@
       </div>
 
       <!-- Images Section -->
-      <div class="section mb-6 bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="header px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-700">Images</h2>
+      <div class="section mb-6 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+        <div class="section-header px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Images</h2>
           <label 
             for="imageUpload" 
-            class="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm cursor-pointer"
+            class="btn primary flex items-center gap-2 cursor-pointer"
           >
-            <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
             </svg>
             Upload Images
@@ -423,31 +487,33 @@
             </div>
           </div>
           
-          <!-- Responsive Image Gallery Grid -->
+          <!-- Responsive Image Gallery Grid with fixed image sizes -->
           <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-            <div v-for="(image, index) in project.imageUrls" :key="index" class="group relative aspect-square">
-              <div class="w-full h-full overflow-hidden rounded-md">
-                <img 
-                  :src="image.url" 
-                  :alt="image.fileName || 'Project image'" 
-                  class="w-full h-full object-cover rounded-md cursor-pointer hover:opacity-90 transition duration-300 transform hover:scale-105" 
-                  loading="lazy"
-                  @click="openCarouselModal(index)"
-                />
+            <div v-for="(image, index) in project.imageUrls" :key="index" class="group relative">
+              <div class="image-card">
+                <div class="image-container w-full overflow-hidden rounded-md">
+                  <img 
+                    :src="image.url" 
+                    :alt="image.fileName || 'Project image'" 
+                    class="w-full h-full object-cover rounded-md cursor-pointer hover:opacity-90 transition duration-300 transform hover:scale-105" 
+                    loading="lazy"
+                    @click="openCarouselModal(index)"
+                  />
+                </div>
+                <!-- Hover overlay with delete button -->
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <button 
+                    @click.stop="deleteImage(image)" 
+                    class="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transform hover:scale-110 transition-all"
+                  >
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                <!-- Image filename caption -->
+                <div class="text-xs sm:text-sm text-gray-500 mt-1 truncate px-1">{{ image.fileName || 'Image ' + (index + 1) }}</div>
               </div>
-              <!-- Hover overlay with delete button -->
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <button 
-                  @click.stop="deleteImage(image)" 
-                  class="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transform hover:scale-110 transition-all"
-                >
-                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-              <!-- Image filename caption -->
-              <div class="text-xs sm:text-sm text-gray-500 mt-1 truncate">{{ image.fileName || 'Image ' + (index + 1) }}</div>
             </div>
           </div>
         </div>
@@ -722,6 +788,7 @@ const tasks = ref([]);
 const parts = ref([]);
 const costs = ref([]);
 const isEditing = ref(false);
+const loading = ref(true);
 const selectedImage = ref(null);
 
 // Image carousel references
@@ -759,6 +826,7 @@ const projectId = props.id || route.params.id;
 
 // Load project data function
 const loadProjectData = async (id) => {
+  loading.value = true;
   try {
     // Fetch all necessary data
     await projectStore.fetchProjects();
@@ -781,6 +849,8 @@ const loadProjectData = async (id) => {
   } catch (error) {
     errorStore.showError('Something went wrong while fetching project data.');
     console.error(error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -1433,6 +1503,48 @@ const navigateToViewCost = (costId) => {
   border-radius: 8px;
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #4f46e5;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.not-found {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.not-found-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.not-found h3 {
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.not-found p {
+  margin-bottom: 24px;
+  color: #6b7280;
+}
+
 .section {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1447,6 +1559,59 @@ const navigateToViewCost = (costId) => {
 .part-list li:hover,
 .cost-list li:hover {
   background-color: #f9f9f9;
+}
+
+.meta-item {
+  margin-bottom: 16px;
+}
+
+.meta-label {
+  margin-bottom: 4px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn.primary {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #4338ca;
+}
+
+.btn.secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn.secondary:hover {
+  background-color: #e5e7eb;
+}
+
+/* Dark mode support */
+:global(.dark) .btn.primary {
+  background-color: #4f46e5;
+}
+
+:global(.dark) .btn.primary:hover {
+  background-color: #4338ca;
+}
+
+:global(.dark) .btn.secondary {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+:global(.dark) .btn.secondary:hover {
+  background-color: #4b5563;
 }
 
 /* Image carousel styles - optimized for responsive design */
@@ -1621,22 +1786,38 @@ const navigateToViewCost = (costId) => {
 }
 
 /* Responsive grid enhancements */
-.aspect-square {
+.image-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.image-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.image-container {
   position: relative;
+  width: 100%;
+  height: 150px; /* Fixed height for consistency */
+  overflow: hidden;
 }
 
-.aspect-square::before {
-  content: "";
-  display: block;
-  padding-top: 100%; /* 1:1 Aspect Ratio */
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.aspect-square > div {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
+/* Dark mode support */
+:global(.dark) .image-card {
+  background-color: #1f2937;
 }
 
 /* Enable smooth scrolling for the entire page */

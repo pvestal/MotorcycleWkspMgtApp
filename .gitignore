@@ -31,3 +31,5 @@ fbConfig.js
 *.sw?
 
 *.tsbuildinfo
+
+**/.claude/settings.local.json

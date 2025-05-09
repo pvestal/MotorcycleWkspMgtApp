@@ -26,6 +26,48 @@
         />
       </div>
 
+      <!-- Part Number -->
+      <div class="form-group">
+        <label for="partNumber" class="form-label">Part Number</label>
+        <input 
+          type="text" 
+          v-model="part.partNumber" 
+          id="partNumber" 
+          class="form-input" 
+          placeholder="Enter part number for inventory tracking" 
+        />
+      </div>
+
+      <div class="form-row">
+        <!-- Price -->
+        <div class="form-group">
+          <label for="price" class="form-label">Price</label>
+          <input 
+            type="number" 
+            v-model="part.price" 
+            id="price" 
+            class="form-input" 
+            min="0" 
+            step="0.01" 
+            placeholder="0.00" 
+          />
+        </div>
+
+        <!-- Quantity -->
+        <div class="form-group">
+          <label for="quantity" class="form-label">Quantity</label>
+          <input 
+            type="number" 
+            v-model="part.quantity" 
+            id="quantity" 
+            class="form-input" 
+            min="1" 
+            step="1" 
+            placeholder="1" 
+          />
+        </div>
+      </div>
+
       <div class="form-row">
         <!-- Part Status -->
         <div class="form-group">
@@ -95,10 +137,12 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { usePartStore } from '../../stores/partStore';
 import { useErrorStore } from '../../stores/errorStore';
+import { useInventoryStore } from '../../stores/inventoryStore';
 import '@/assets/form-styles.css';
 
 const partStore = usePartStore();
 const errorStore = useErrorStore();
+const inventoryStore = useInventoryStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -113,6 +157,9 @@ const part = ref({
   partStatus: 'Ordered', 
   partName: '',
   description: '',
+  partNumber: '', // Added partNumber field to track in inventory
+  price: 0,       // Added price for inventory
+  quantity: 1,    // Default quantity
   projectId: route.params.projectId || '' 
 });
 
@@ -150,6 +197,22 @@ const validateForm = () => {
     error.value = "Part name is required";
     return false;
   }
+  
+  // If partNumber is provided, validate related fields
+  if (part.value.partNumber && part.value.partNumber.trim() !== '') {
+    // Validate price is a valid number
+    if (isNaN(parseFloat(part.value.price)) || parseFloat(part.value.price) < 0) {
+      error.value = "Please enter a valid price (0 or greater)";
+      return false;
+    }
+    
+    // Validate quantity is a positive integer
+    if (!Number.isInteger(Number(part.value.quantity)) || Number(part.value.quantity) < 1) {
+      error.value = "Quantity must be a positive whole number";
+      return false;
+    }
+  }
+  
   return true;
 };
 
@@ -165,8 +228,34 @@ const handleSubmit = async () => {
       await partStore.updatePart(route.params.id, part.value);
       errorStore.showNotification('Part updated successfully', 'success');
     } else {
-      await partStore.addPart(part.value);
+      // Add part to part store
+      const addedPart = await partStore.addPart(part.value);
       errorStore.showNotification('Part added successfully', 'success');
+      
+      // If part has a part number, also add to inventory
+      if (part.value.partNumber && part.value.partNumber.trim() !== '') {
+        try {
+          // Create inventory item from part data
+          const inventoryItem = {
+            partNumber: part.value.partNumber,
+            description: part.value.description || part.value.partName,
+            manufacturer: '', // Could be added to part form later
+            category: 'Motorcycle Parts',
+            price: parseFloat(part.value.price) || 0,
+            quantity: parseInt(part.value.quantity) || 1,
+            reorderThreshold: 5,
+            status: part.value.partStatus === 'Ordered' ? 'on_order' : 'in_stock',
+            location: 'Main Warehouse'
+          };
+          
+          await inventoryStore.addInventoryItem(inventoryItem);
+          errorStore.showNotification('Part added to inventory', 'success');
+        } catch (inventoryErr) {
+          // Don't fail the entire operation if inventory update fails
+          console.error('Failed to add to inventory:', inventoryErr);
+          errorStore.showError('Part added but failed to update inventory: ' + inventoryErr.message);
+        }
+      }
     }
     router.push('/parts');
   } catch (err) {

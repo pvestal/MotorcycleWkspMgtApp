@@ -1,0 +1,256 @@
+/**
+ * Theme variables and color scheme for the application
+ * Supports both light and dark modes using CSS variables
+ */
+
+:root {
+  /* Base colors - Light theme (default) */
+  --color-bg-primary: #f5f7fa;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f5f9;
+  --color-bg-accent: #e6fffa;
+  
+  /* Text colors - Improved contrast */
+  --color-text-primary: #000000;
+  --color-text-secondary: #2d3748;
+  --color-text-tertiary: #4a5568;
+  --color-text-accent: #0b9e95;
+  --color-text-inverse: #ffffff;
+  
+  /* Primary brand colors */
+  --color-primary: #4fd1c5;
+  --color-primary-hover: #38b2ac;
+  --color-primary-active: #319795;
+  --color-primary-light: #e6fffa;
+  
+  /* Secondary colors */
+  --color-secondary: #805ad5;
+  --color-secondary-hover: #6b46c1;
+  --color-secondary-light: #e9d8fd;
+  
+  /* Status colors */
+  --color-success: #48bb78;
+  --color-success-light: #f0fff4;
+  --color-warning: #ecc94b;
+  --color-warning-light: #fffaf0;
+  --color-error: #f56565;
+  --color-error-light: #fff5f5;
+  --color-info: #4299e1;
+  --color-info-light: #ebf8ff;
+  
+  /* Border colors */
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e0;
+  --color-border-focus: #4fd1c5;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-dark: rgba(0, 0, 0, 0.2);
+  
+  /* Component specific */
+  --color-navbar-bg: #1a202c;
+  --color-sidebar-bg: #2d3748;
+  --color-card-bg: #ffffff;
+  --color-input-bg: #ffffff;
+  --color-button-bg: #4fd1c5;
+  --color-button-text: #ffffff;
+  
+  /* Animation timing */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  /* Spacing - Increased for better readability and UI flow */
+  --space-1: 6px;   /* Increased from 4px */
+  --space-2: 12px;  /* Increased from 8px */
+  --space-3: 16px;  /* Increased from 12px */
+  --space-4: 24px;  /* Increased from 16px */
+  --space-5: 32px;  /* Increased from 24px */
+  --space-6: 40px;  /* Increased from 32px */
+  --space-8: 56px;  /* Increased from 48px */
+  --space-10: 80px; /* Increased from 64px */
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Box shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 15px 25px rgba(0, 0, 0, 0.1);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  /* Font sizes - Enhanced for better readability */
+  --font-size-xs: 0.8125rem;  /* 13px */
+  --font-size-sm: 0.9375rem;  /* 15px */
+  --font-size-md: 1.0625rem;  /* 17px */
+  --font-size-lg: 1.1875rem;  /* 19px */
+  --font-size-xl: 1.375rem;   /* 22px */
+  --font-size-2xl: 1.625rem;  /* 26px */
+  --font-size-3xl: 2rem;      /* 32px */
+  --font-size-4xl: 2.5rem;    /* 40px */
+  
+  /* Font weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Z-index layers */
+  --z-index-dropdown: 10;
+  --z-index-sticky: 20;
+  --z-index-fixed: 30;
+  --z-index-modal: 40;
+  --z-index-tooltip: 50;
+}
+
+/* Dark theme variables */
+[data-theme="dark"] {
+  /* Base colors - Dark theme */
+  --color-bg-primary: #121820;
+  --color-bg-secondary: #1e2836;
+  --color-bg-tertiary: #2d3748;
+  --color-bg-accent: #1e3032;
+  
+  /* Text colors - Improved contrast */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #f0f4f8;
+  --color-text-tertiary: #d0d8e0;
+  --color-text-accent: #60ebe0;
+  --color-text-inverse: #0f1419;
+  
+  /* No need to redefine primary brand colors - they stay the same */
+  --color-primary-light: #2c393b;
+  
+  /* Border colors */
+  --color-border: #4a5568;
+  --color-border-hover: #718096;
+  
+  /* Shadow colors */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-dark: rgba(0, 0, 0, 0.5);
+  
+  /* Component specific */
+  --color-navbar-bg: #171923;
+  --color-sidebar-bg: #1a202c;
+  --color-card-bg: #2d3748;
+  --color-input-bg: #364154;
+  
+  /* Box shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 15px 25px rgba(0, 0, 0, 0.3);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Utility classes for theme related functionality */
+.theme-transition {
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal),
+              border-color var(--transition-normal),
+              box-shadow var(--transition-normal);
+}
+
+/* Common color utility classes */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-accent { color: var(--color-text-accent); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-info { color: var(--color-info); }
+
+/* Font size utility classes */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+.text-3xl { font-size: var(--font-size-3xl); }
+.text-4xl { font-size: var(--font-size-4xl); }
+
+/* Spacing utility classes */
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-5 { padding: var(--space-5); }
+.p-6 { padding: var(--space-6); }
+
+.m-1 { margin: var(--space-1); }
+.m-2 { margin: var(--space-2); }
+.m-3 { margin: var(--space-3); }
+.m-4 { margin: var(--space-4); }
+.m-5 { margin: var(--space-5); }
+.m-6 { margin: var(--space-6); }
+
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-5 { gap: var(--space-5); }
+.gap-6 { gap: var(--space-6); }
+
+.bg-primary { background-color: var(--color-bg-primary); }
+.bg-secondary { background-color: var(--color-bg-secondary); }
+.bg-tertiary { background-color: var(--color-bg-tertiary); }
+.bg-accent { background-color: var(--color-bg-accent); }
+.bg-success-light { background-color: var(--color-success-light); }
+.bg-warning-light { background-color: var(--color-warning-light); }
+.bg-error-light { background-color: var(--color-error-light); }
+.bg-info-light { background-color: var(--color-info-light); }
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn var(--transition-normal) forwards;
+}
+
+.slide-in-right {
+  animation: slideInRight var(--transition-normal) forwards;
+}
+
+.slide-in-left {
+  animation: slideInLeft var(--transition-normal) forwards;
+}
+
+.slide-in-up {
+  animation: slideInUp var(--transition-normal) forwards;
+}
+
+.slide-in-down {
+  animation: slideInDown var(--transition-normal) forwards;
+}
+
+/* Keyframes for animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
