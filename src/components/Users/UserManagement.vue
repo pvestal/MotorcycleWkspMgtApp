@@ -39,10 +39,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useUserStore } from "../../stores/userStore";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import type { User } from '@/types/interfaces';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -50,17 +51,16 @@ const router = useRouter();
 const isAdmin = computed(() => userStore.isAdmin);
 const users = computed(() => userStore.users);
 
-const fetchAllUsers = async () => {
+const fetchAllUsers = async (): Promise<void> => {
   await userStore.fetchAllUsers();
 };
 
-const editUser = (user) => {
+const editUser = (user: User): void => {
   // Navigate to the edit page with the user's ID
   router.push({ name: 'EditUser', params: { id: user.uid } });
 };
 
-
-const deleteUser = async (uid) => {
+const deleteUser = async (uid: string): Promise<void> => {
   if (confirm("Are you sure you want to delete this user?")) {
     await userStore.deleteUser(uid);
   }
