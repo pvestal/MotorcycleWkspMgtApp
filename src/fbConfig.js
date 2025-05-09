@@ -8,14 +8,15 @@ import { getAuth, signInWithPopup, signOut, GoogleAuthProvider, signInAnonymousl
 // Create provider after importing GoogleAuthProvider
 const googleProvider = new GoogleAuthProvider();
 
+// Load config from environment variables
 const fbcf = {
-  apiKey: "AIzaSyCS-hfHzACm7nNrJjqEcGZAdyVX-_AhFWA",
-  authDomain: "motocraft-twoheads.firebaseapp.com",
-  projectId: "motocraft-twoheads",
-  storageBucket: "motocraft-twoheads.appspot.com",
-  messagingSenderId: "320362990178",
-  appId: "1:320362990178:web:349e29b207804548ae1f3b",
-  measurementId: "G-M1PDFTP63T"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
