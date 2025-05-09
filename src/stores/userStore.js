@@ -72,19 +72,36 @@ export const useUserStore = defineStore({
     async loginWithGoogle() {
       const errorStore = useErrorStore();
       try {
+        // Configure popup behavior for better cross-origin compatibility
+        googleProvider.setCustomParameters({
+          prompt: 'select_account',
+          // Ensure the popup works in a variety of browser security environments
+          auth_type: 'rerequest',
+          // For COOP compatibility
+          nonce: Math.random().toString(36).substring(2),
+        });
+
         const result = await signInWithPopup(auth, googleProvider);
-    
-        if (auth.currentUser.isAnonymous) {
-          // If the user is currently anonymous, link their account to the Google credentials
-          const credential = GoogleAuthProvider.credential(result.user.accessToken);
-          await linkWithCredential(auth.currentUser, credential);
+
+        if (auth.currentUser && auth.currentUser.isAnonymous) {
+          try {
+            // If the user is currently anonymous, link their account to the Google credentials
+            const credential = GoogleAuthProvider.credential(
+              result._tokenResponse.oauthIdToken,
+              result._tokenResponse.oauthAccessToken
+            );
+            await linkWithCredential(auth.currentUser, credential);
+          } catch (linkError) {
+            console.log('Account linking not needed or failed:', linkError.message);
+            // Continue with login process regardless
+          }
         }
-    
+
         const userRef = doc(db, "users", result.user.uid);
         const userDoc = await getDoc(userRef);
-    
+
         let userData;
-    
+
         if (!userDoc.exists()) {
           userData = {
             uid: result.user.uid,
@@ -97,7 +114,7 @@ export const useUserStore = defineStore({
             updatedAt: Timestamp.now(),
             createdAt: Timestamp.now(),
           };
-    
+
           await setDoc(userRef, userData);
         } else {
           userData = {
@@ -107,14 +124,19 @@ export const useUserStore = defineStore({
           };
           await updateDoc(userRef, { lastLoginAt: Timestamp.now(), updatedAt: Timestamp.now() });
         }
-    
+
         this.setUser(userData);
         if (analytics) {
-          logEvent(analytics, 'login', { method: 'Google' });
+          try {
+            logEvent(analytics, 'login', { method: 'Google' });
+          } catch (analyticsError) {
+            console.log('Analytics event logging failed:', analyticsError);
+          }
         }
         // router.push('/tasks');
       } catch (error) {
-        errorStore.showError("An error occurred during login: " + error.message);
+        console.error("Google login error details:", error);
+        errorStore.showError("An error occurred during login: " + (error.message || "Please try again"));
       }
     },    
     async loginAnonymously() {
