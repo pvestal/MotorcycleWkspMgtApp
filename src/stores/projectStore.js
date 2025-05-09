@@ -26,14 +26,23 @@ export const useProjectStore = defineStore('projectStore', {
         errorStore.showError('Error fetching projects: ' + error.message);
       }
     },
-    async fetchProjectById(projectId) {
-      const projectDoc = doc(db, 'projects', projectId);
-      const projectSnapshot = await getDoc(projectDoc);
-      if (projectSnapshot.exists()) {
-        this.selectedProject = projectSnapshot.data();
-        await this.fetchNoteHistory(projectId);
-      }
-    },
+async fetchProjectById(projectId) {
+  const errorStore = useErrorStore();
+  try {
+    const projectDoc = doc(db, 'projects', projectId);
+    const projectSnapshot = await getDoc(projectDoc);
+
+    if (projectSnapshot.exists()) {
+      this.selectedProject = projectSnapshot.data(); // Set the fetched project
+      return this.selectedProject; // Return the project data
+    } else {
+      throw new Error('No such project exists');
+    }
+  } catch (error) {
+    errorStore.showError("Error fetching project:", error.message);
+    throw error;
+  }
+},
     // Add a new project to Firestore
     async addProject(projectData) {
       const errorStore = useErrorStore();

@@ -1,11 +1,9 @@
 <template>
-    <div>
-      <PartForm/>
-    </div>
-  </template>
+  <div>
+    <PartForm />
+  </div>
+</template>
   
-  <script setup>
-  import PartForm from './PartForm.vue';
-  
-  </script>
-  
+<script setup>
+import PartForm from './PartForm.vue';
+</script>

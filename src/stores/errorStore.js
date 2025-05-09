@@ -5,6 +5,9 @@ export const useErrorStore = defineStore({
   state: () => ({
     errorMessage: "",
     errorVisible: false,
+    notificationMessage: "",
+    notificationVisible: false,
+    notificationType: "info", // "info", "success", "warning", "error"
   }),
   actions: {
     showError(message) {
@@ -18,6 +21,18 @@ export const useErrorStore = defineStore({
     clearError() {
       this.errorMessage = "";
       this.errorVisible = false;
+    },
+    showNotification(message, type = "success", duration = 5000) {
+      this.notificationMessage = message;
+      this.notificationType = type;
+      this.notificationVisible = true;
+      setTimeout(() => {
+        this.clearNotification();
+      }, duration);
+    },
+    clearNotification() {
+      this.notificationMessage = "";
+      this.notificationVisible = false;
     },
   },
 });

@@ -4,7 +4,11 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import App from './App.vue';
 import router from './router';
-import { useUserStore } from './stores/userStore';
+import { useUserStore } from './stores/userStore.ts';
+
+// Import global styles and theme
+import './assets/theme.css';
+import './assets/form-styles.css';
 
 const app = createApp(App);
 
