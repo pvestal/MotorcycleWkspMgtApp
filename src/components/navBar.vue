@@ -250,16 +250,11 @@ watch(() => userStore.currentUser, (newUser) => {
   max-width: 320px;
   height: 100%;
   background-color: var(--color-sidebar-bg);
-  color: var(--color-text-inverse);
+  color: white; /* Always use white text in sidebar for better contrast */
   transition: all var(--transition-normal);
   z-index: var(--z-index-modal);
   box-shadow: var(--shadow-lg);
   overflow-y: auto;
-}
-
-/* Ensure sidebar text is white in dark mode */
-:global(.dark) .sidebar {
-  color: white;
 }
 
 .sidebar-open {
@@ -280,6 +275,7 @@ watch(() => userStore.currentUser, (newUser) => {
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   transition: all 0.3s ease;
+  color: white; /* Ensure text is white */
 }
 
 .profile-section:hover {
@@ -311,7 +307,7 @@ watch(() => userStore.currentUser, (newUser) => {
   margin-right: 6px;
   vertical-align: middle;
   font-size: 18px;
-  color: inherit; /* Inherit color from parent */
+  color: white; /* Ensure icons are white */
 }
 
 .profile-section p {
@@ -334,12 +330,13 @@ watch(() => userStore.currentUser, (newUser) => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
+  color: white; /* Ensure text is white */
 }
 
 .nav-links li span.material-symbols-outlined {
   margin-right: 12px;
   font-size: 20px;
-  color: inherit; /* Inherit from parent for consistent coloring */
+  color: white; /* Ensure icons are white */
 }
 
 .nav-links li:hover {
@@ -419,12 +416,17 @@ watch(() => userStore.currentUser, (newUser) => {
   vertical-align: middle;
 }
 
-/* Make icons white when in dark mode */
-:global(.dark) .material-symbols-outlined {
+/* Make sidebar icons white regardless of theme */
+.sidebar .material-symbols-outlined {
   color: white;
 }
 
-:global(.light) .material-symbols-outlined {
+/* For icons outside the sidebar, respect theme */
+:global(.dark) .navbar .material-symbols-outlined:not(.sidebar *) {
+  color: white;
+}
+
+:global(.light) .navbar .material-symbols-outlined:not(.sidebar *) {
   color: inherit;
 }
 </style>

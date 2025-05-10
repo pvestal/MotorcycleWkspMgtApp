@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="400px" viewBox="0 0 400 400" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Validate and Earn Rewards</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="validateGradient">
+            <stop stop-color="#F6AD55" offset="0%"></stop>
+            <stop stop-color="#ED8936" offset="100%"></stop>
+        </linearGradient>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+    <g id="Validate" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Background -->
+        <rect fill="#F5F7FA" x="0" y="0" width="400" height="400" rx="20"></rect>
+        
+        <!-- Main Content -->
+        <g transform="translate(50, 50)">
+            <!-- Validation Board -->
+            <rect fill="#2D3748" x="0" y="0" width="300" height="200" rx="15"></rect>
+            
+            <!-- Badges and Rewards -->
+            <g transform="translate(30, 30)" filter="url(#shadow)">
+                <!-- Trophy -->
+                <g transform="translate(0, 20)">
+                    <path d="M20,0 L40,0 L40,40 C40,50 30,60 20,60 C10,60 0,50 0,40 L0,0 Z" fill="#F6AD55"></path>
+                    <path d="M40,0 L40,10 C50,10 60,20 60,30 C60,40 50,45 40,45 L40,40 C45,40 50,37 50,30 C50,23 45,20 40,20 L40,0 Z" fill="#F6E05E"></path>
+                    <path d="M0,0 L0,10 C-10,10 -20,20 -20,30 C-20,40 -10,45 0,45 L0,40 C-5,40 -10,37 -10,30 C-10,23 -5,20 0,20 L0,0 Z" fill="#F6E05E"></path>
+                    <rect fill="#F6AD55" x="15" y="60" width="10" height="20"></rect>
+                    <rect fill="#F6AD55" x="5" y="80" width="30" height="5" rx="2"></rect>
+                </g>
+                
+                <!-- Medal 1 -->
+                <g transform="translate(100, 20)">
+                    <circle fill="#ED8936" cx="30" cy="30" r="30"></circle>
+                    <circle fill="#F6AD55" cx="30" cy="30" r="22"></circle>
+                    <text font-family="Arial" font-size="24" font-weight="bold" fill="#2D3748" text-anchor="middle">
+                        <tspan x="30" y="38">1</tspan>
+                    </text>
+                    <rect fill="#F6AD55" x="27" y="60" width="6" height="20"></rect>
+                </g>
+                
+                <!-- Medal 2 -->
+                <g transform="translate(175, 20)">
+                    <circle fill="#718096" cx="30" cy="30" r="30"></circle>
+                    <circle fill="#A0AEC0" cx="30" cy="30" r="22"></circle>
+                    <text font-family="Arial" font-size="24" font-weight="bold" fill="#2D3748" text-anchor="middle">
+                        <tspan x="30" y="38">2</tspan>
+                    </text>
+                    <rect fill="#718096" x="27" y="60" width="6" height="20"></rect>
+                </g>
+                
+                <!-- Stars -->
+                <g transform="translate(60, 110)">
+                    <path d="M15,0 L18.5,10.5 L30,12 L22.5,20 L24.5,31.5 L15,26 L5.5,31.5 L7.5,20 L0,12 L11.5,10.5 Z" fill="#F6E05E"></path>
+                </g>
+                <g transform="translate(110, 110)">
+                    <path d="M15,0 L18.5,10.5 L30,12 L22.5,20 L24.5,31.5 L15,26 L5.5,31.5 L7.5,20 L0,12 L11.5,10.5 Z" fill="#F6E05E"></path>
+                </g>
+                <g transform="translate(160, 110)">
+                    <path d="M15,0 L18.5,10.5 L30,12 L22.5,20 L24.5,31.5 L15,26 L5.5,31.5 L7.5,20 L0,12 L11.5,10.5 Z" fill="#F6E05E"></path>
+                </g>
+            </g>
+            
+            <!-- Points Bar -->
+            <g transform="translate(50, 170)">
+                <rect fill="#1A202C" x="0" y="0" width="200" height="20" rx="10"></rect>
+                <rect fill="url(#validateGradient)" x="0" y="0" width="150" height="20" rx="10"></rect>
+                <text font-family="Arial" font-size="12" font-weight="bold" fill="#F5F7FA" text-anchor="middle">
+                    <tspan x="100" y="14">750 REWARD POINTS</tspan>
+                </text>
+            </g>
+        </g>
+        
+        <!-- Title -->
+        <g transform="translate(50, 270)">
+            <text font-family="Arial" font-size="28" font-weight="bold" fill="#2D3748">
+                <tspan x="0" y="30">Validate and Earn Rewards</tspan>
+            </text>
+            <rect fill="url(#validateGradient)" x="0" y="40" width="100" height="4" rx="2"></rect>
+            <text font-family="Arial" font-size="16" fill="#4A5568">
+                <tspan x="0" y="70">Validate tasks and information to earn points,</tspan>
+                <tspan x="0" y="95">badges, and unlock special features.</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

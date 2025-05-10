@@ -1,18 +1,42 @@
 <script setup>
+import { ref, onMounted } from 'vue';
 import { useErrorStore } from './stores/errorStore';
 import { useUserStore } from './stores/userStore';
 import { useThemeStore } from './stores/themeStore';
 import navBar from '@/components/navBar.vue'
-import { onMounted } from 'vue';
+import DemoControls from '@/components/Demo/DemoControls.vue';
+import {
+  initDemoService,
+  isDemoActive as checkDemoActive
+} from '@/services/demoService';
 import '@/assets/theme.css';
 
 const errorStore = useErrorStore();
 const userStore = useUserStore();
 const themeStore = useThemeStore();
+const isDemoActive = ref(false);
+const isOnHomePage = ref(false);
+
+// Check current route to avoid showing demo controls on home page
+// since it already has its own controls
+const checkIfHomePage = () => {
+  const path = window.location.pathname;
+  isOnHomePage.value = path === '/' || path === '';
+};
 
 onMounted(() => {
   userStore.setUpAuthListener();
   // Theme is already initialized in the store
+
+  // Initialize demo service
+  initDemoService();
+  isDemoActive.value = checkDemoActive();
+
+  // Check if we're on the home page
+  checkIfHomePage();
+
+  // Update home page check when navigation occurs
+  window.addEventListener('popstate', checkIfHomePage);
 });
 
 </script>
@@ -20,15 +44,22 @@ onMounted(() => {
 <template>
   <div class="app-container theme-transition">
     <div class="systemError" v-if="errorStore.errorVisible">{{ errorStore.errorMessage }}</div>
-    
-    <div class="notification" 
+
+    <div class="notification"
          v-if="errorStore.notificationVisible"
          :class="errorStore.notificationType">
       {{ errorStore.notificationMessage }}
       <button class="notification-close" @click="errorStore.clearNotification">&times;</button>
     </div>
-    
+
     <navBar />
+
+    <!-- Global floating demo controls (not shown on homepage or when fully authenticated) -->
+    <DemoControls
+      v-if="isDemoActive && !isOnHomePage"
+      :floating="true"
+      :showDemoButton="false"
+    />
   </div>
 </template>
 

@@ -6,71 +6,201 @@
         <p>
           Your trusted motorcycle workshop management app, where enthusiasts, mechanics, and riders come together to share and validate maintenance knowledge. Join us today and contribute your experiences while earning rewards and recognition.
         </p>
-        <button class="hover-effect" @click="navigateToSignUp">Sign Up / Register</button>
+        <div class="hero-buttons">
+          <button class="signup-button hover-effect" @click="navigateToSignUp">Sign Up / Register</button>
+          <button v-if="!userStore.isAuthenticated && !isDemoActive" class="demo-button hover-effect" @click="activateDemo">Try Demo</button>
+        </div>
       </div>
     </section>
+
+    <!-- Demo Banner (shown only to non-authenticated users) -->
+    <DemoBanner v-if="!userStore.isAuthenticated && !userStore.isAnonymous" />
+
+    <!-- Demo Controls (shown when demo is active) -->
+    <DemoControls v-if="isDemoActive" :floating="false" :showDemoButton="false" />
+
+    <!-- Guest Demo Promotion with clear limitations -->
+    <GuestDemoPromotion v-if="!userStore.isAuthenticated || userStore.isAnonymous" />
 
     <section class="call-to-action-images">
       <!-- Collaborate with Community Image -->
       <div class="cta-image hover-effect">
-        <img src="../assets/CollaborateCommunity.png" alt="Collaborate with Community" />
+        <img src="../assets/CollaborateCommunity-new.svg" alt="Collaborate with Community" />
         <h2>Collaborate with Community</h2>
         <p>Work with fellow riders and mechanics to improve and validate the resources available to everyone.</p>
       </div>
 
       <!-- Validate and Earn Rewards Image -->
       <div class="cta-image hover-effect">
-        <img src="../assets/ValidateEarnRewards.png" alt="Validate and Earn Rewards" />
+        <img src="../assets/ValidateEarnRewards-new.svg" alt="Validate and Earn Rewards" />
         <h2>Validate and Earn Rewards</h2>
         <p>Help validate maintenance tasks, parts, and costs, and earn rewards for your contributions.</p>
       </div>
 
       <!-- Add Parts, Tasks, and Costs Image -->
       <div class="cta-image hover-effect">
-        <img src="../assets/AddPartsTasksCosts.png" alt="Add Parts, Tasks, and Costs" />
+        <img src="../assets/AddPartsTasksCosts-new.svg" alt="Add Parts, Tasks, and Costs" />
         <h2>Add Parts, Tasks, and Costs</h2>
         <p>Contribute your knowledge on motorcycle parts, tasks, and costs to help others with their projects.</p>
       </div>
     </section>
-    
+
     <!-- New Features Coming Soon Section -->
     <section class="upcoming-features">
       <h2>New Features Coming Soon</h2>
       <div class="features-grid">
         <div class="feature-card">
-          <span class="material-symbols-outlined">inventory_2</span>
+          <div class="feature-icon inventory-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#E6FFFA" />
+              <rect x="5" y="7" width="6" height="6" rx="1" fill="#4FD1C5" />
+              <rect x="13" y="7" width="6" height="6" rx="1" fill="#4FD1C5" />
+              <rect x="5" y="15" width="6" height="4" rx="1" fill="#4FD1C5" />
+              <rect x="13" y="15" width="6" height="4" rx="1" fill="#4FD1C5" />
+            </svg>
+          </div>
           <h3>Inventory Management</h3>
           <p>Connect directly to inventory systems to track parts availability and pricing</p>
         </div>
         <div class="feature-card">
-          <span class="material-symbols-outlined">phone_iphone</span>
+          <div class="feature-icon mobile-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <rect x="7" y="2" width="10" height="20" rx="2" fill="#E6FFFA" />
+              <rect x="8" y="4" width="8" height="14" rx="1" fill="#4FD1C5" />
+              <circle cx="12" cy="20" r="1" fill="#4FD1C5" />
+            </svg>
+          </div>
           <h3>Mobile App</h3>
           <p>Access your workshop projects on the go with our upcoming mobile application</p>
         </div>
         <div class="feature-card">
-          <span class="material-symbols-outlined">workspace_premium</span>
+          <div class="feature-icon premium-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <circle cx="12" cy="12" r="10" fill="#E6FFFA" />
+              <path d="M12,4 L14,10 L20,10 L15,14 L17,20 L12,16 L7,20 L9,14 L4,10 L10,10 Z" fill="#4FD1C5" />
+            </svg>
+          </div>
           <h3>Premium Features</h3>
           <p>Unlock advanced tools with our subscription plans, perfect for professional shops</p>
         </div>
         <div class="feature-card">
-          <span class="material-symbols-outlined">shield</span>
+          <div class="feature-icon security-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path d="M12,2 L3,6 L3,10 C3,15.55 6.84,20.74 12,22 C17.16,20.74 21,15.55 21,10 L21,6 L12,2 Z" fill="#E6FFFA" />
+              <path d="M12,12 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" fill="#4FD1C5" />
+              <path d="M12,13 L12,15" stroke="#E6FFFA" stroke-width="2" stroke-linecap="round" />
+              <path d="M12,9 L12,11" stroke="#E6FFFA" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
           <h3>Enhanced Security</h3>
           <p>Advanced data protection and sanitized inputs for workshop management</p>
         </div>
       </div>
     </section>
+
+    <!-- Floating Demo Controls (shown only when demo is not active and user is not authenticated) -->
+    <DemoControls
+      v-if="!isDemoActive && !userStore.isAuthenticated"
+      :floating="true"
+      :showDemoButton="true"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
+import DemoBanner from '@/components/Demo/DemoBanner.vue';
+import DemoControls from '@/components/Demo/DemoControls.vue';
+import GuestDemoPromotion from '@/components/Demo/GuestDemoPromotion.vue';
+import {
+  initDemoService,
+  activateDemo as activateDemoMode,
+  isDemoActive as checkDemoActive
+} from '@/services/demoService';
 
 const router = useRouter();
+const userStore = useUserStore();
+const isDemoActive = ref(false);
 
 const navigateToSignUp = () => {
   router.push({ name: "SignUp" });
 };
+
+const activateDemo = () => {
+  const success = activateDemoMode();
+  if (success) {
+    isDemoActive.value = true;
+    // Reload to apply demo mode
+    window.location.reload();
+  }
+};
+
+onMounted(() => {
+  initDemoService();
+  isDemoActive.value = checkDemoActive();
+});
 </script>
+
+<style scoped>
+/* Add these new styles for the demo button and hero button container */
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.signup-button, .demo-button {
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.signup-button {
+  background-color: #4fd1c5;
+  color: #1a202c;
+  border: none;
+  box-shadow: 0 4px 14px rgba(79, 209, 197, 0.5);
+}
+
+.demo-button {
+  background-color: transparent;
+  color: white;
+  border: 2px solid white;
+}
+
+.signup-button:hover, .demo-button:hover {
+  transform: translateY(-2px);
+}
+
+.signup-button:hover {
+  background-color: #38b2ac;
+  box-shadow: 0 6px 20px rgba(79, 209, 197, 0.6);
+}
+
+.demo-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 480px) {
+  .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+
+  .signup-button, .demo-button {
+    width: 100%;
+  }
+}
+</style>
 
 <style scoped>
 .home-page {
@@ -197,6 +327,8 @@ const navigateToSignUp = () => {
   border-radius: 12px;
   transition: all 0.3s ease;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  object-fit: contain;
+  max-height: 250px;
 }
 
 .cta-image:hover img {
@@ -266,10 +398,21 @@ const navigateToSignUp = () => {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
 
-.feature-card .material-symbols-outlined {
-  font-size: 48px;
-  color: #4fd1c5;
+.feature-icon {
   margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70px;
+}
+
+.feature-icon svg {
+  filter: drop-shadow(0 4px 6px rgba(79, 209, 197, 0.2));
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon svg {
+  transform: scale(1.1);
 }
 
 .feature-card h3 {

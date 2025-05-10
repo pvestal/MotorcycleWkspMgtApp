@@ -318,8 +318,8 @@
       <div class="section mb-6 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
         <div class="section-header px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
           <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Images</h2>
-          <label 
-            for="imageUpload" 
+          <label
+            for="imageUpload"
             class="btn primary flex items-center gap-2 cursor-pointer"
           >
             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -327,20 +327,21 @@
             </svg>
             Upload Images
           </label>
-          <input 
-            id="imageUpload" 
-            type="file" 
-            multiple 
-            @change="handleImageUpload" 
-            class="hidden" 
+          <input
+            id="imageUpload"
+            type="file"
+            multiple
+            @change="handleImageUpload"
+            class="hidden"
           />
         </div>
 
         <div class="px-6 py-4">
+
           <div v-if="!project.imageUrls || !project.imageUrls.length" class="text-gray-500 text-center py-4">
             No images have been uploaded to this project yet.
           </div>
-          
+
           <!-- Featured Image Carousel -->
           <div v-else-if="project.imageUrls.length > 0" class="mb-6">
             <div class="image-carousel-container relative bg-gradient-to-b from-gray-50 to-gray-100 rounded-xl shadow-lg p-4">
@@ -354,12 +355,12 @@
                       name="carousel-slide"
                       class="absolute inset-0 flex items-center justify-center"
                     >
-                      <img 
+                      <img
                         v-for="(image, idx) in project.imageUrls"
-                        :key="image.url"
+                        :key="typeof image === 'string' ? image : image.url"
                         v-show="idx === currentImageIndex"
-                        :src="image.url"
-                        :alt="image.fileName || 'Project image'"
+                        :src="typeof image === 'string' ? image : image.url"
+                        :alt="typeof image === 'string' ? 'Project image' : (image.fileName || 'Project image')"
                         class="featured-image max-h-full max-w-full cursor-pointer object-contain transform transition-all duration-500"
                         loading="lazy"
                         @click="openCarouselModal(idx)"
@@ -372,9 +373,11 @@
                     <div class="flex justify-between items-end">
                       <div class="image-caption max-w-[70%]">
                         <h3 class="font-medium text-sm truncate">
-                          {{ project.imageUrls[currentImageIndex].fileName || 'Project image ' + (currentImageIndex + 1) }}
+                          {{ typeof project.imageUrls[currentImageIndex] === 'string'
+                              ? 'Project image ' + (currentImageIndex + 1)
+                              : (project.imageUrls[currentImageIndex].fileName || 'Project image ' + (currentImageIndex + 1)) }}
                         </h3>
-                        <p v-if="project.imageUrls[currentImageIndex].uploadDate" class="text-xs text-gray-300">
+                        <p v-if="typeof project.imageUrls[currentImageIndex] === 'object' && project.imageUrls[currentImageIndex].uploadDate" class="text-xs text-gray-300">
                           {{ formatDate(project.imageUrls[currentImageIndex].uploadDate) }}
                         </p>
                       </div>
@@ -431,7 +434,7 @@
                 <!-- Counter text -->
                 <div class="flex justify-between text-xs text-gray-600">
                   <span>{{ currentImageIndex + 1 }} of {{ project.imageUrls.length }}</span>
-                  <span v-if="project.imageUrls[currentImageIndex].dimensions">
+                  <span v-if="typeof project.imageUrls[currentImageIndex] === 'object' && project.imageUrls[currentImageIndex].dimensions">
                     {{ project.imageUrls[currentImageIndex].dimensions.width }}x{{ project.imageUrls[currentImageIndex].dimensions.height }}
                   </span>
                 </div>
@@ -452,9 +455,9 @@
                       }"
                     >
                       <div class="thumbnail-frame h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
-                        <img 
-                          :src="image.url" 
-                          :alt="image.fileName || 'Thumbnail'" 
+                        <img
+                          :src="typeof image === 'string' ? image : image.url"
+                          :alt="typeof image === 'string' ? 'Thumbnail' : (image.fileName || 'Thumbnail')"
                           class="h-full w-full object-cover"
                           loading="lazy"
                         />
@@ -492,10 +495,10 @@
             <div v-for="(image, index) in project.imageUrls" :key="index" class="group relative">
               <div class="image-card">
                 <div class="image-container w-full overflow-hidden rounded-md">
-                  <img 
-                    :src="image.url" 
-                    :alt="image.fileName || 'Project image'" 
-                    class="w-full h-full object-cover rounded-md cursor-pointer hover:opacity-90 transition duration-300 transform hover:scale-105" 
+                  <img
+                    :src="typeof image === 'string' ? image : image.url"
+                    :alt="typeof image === 'string' ? 'Project image' : (image.fileName || 'Project image')"
+                    class="w-full h-full object-cover rounded-md cursor-pointer hover:opacity-90 transition duration-300 transform hover:scale-105"
                     loading="lazy"
                     @click="openCarouselModal(index)"
                   />
@@ -539,7 +542,11 @@
             <!-- Image info -->
             <div class="text-white">
               <span class="font-medium text-sm mr-2">{{ modalImageIndex + 1 }} / {{ project.imageUrls.length }}</span>
-              <span class="text-gray-400 text-xs">{{ project.imageUrls[modalImageIndex].fileName || 'Image ' + (modalImageIndex + 1) }}</span>
+              <span class="text-gray-400 text-xs">{{
+                typeof project.imageUrls[modalImageIndex] === 'string'
+                  ? 'Image ' + (modalImageIndex + 1)
+                  : (project.imageUrls[modalImageIndex].fileName || 'Image ' + (modalImageIndex + 1))
+              }}</span>
             </div>
             
             <!-- Play/pause button -->
@@ -621,10 +628,16 @@
               name="fade" 
               mode="out-in"
             >
-              <img 
-                :key="project.imageUrls[modalImageIndex].url"
-                :src="project.imageUrls[modalImageIndex].url" 
-                :alt="project.imageUrls[modalImageIndex].fileName || 'Project image'" 
+              <img
+                :key="typeof project.imageUrls[modalImageIndex] === 'string'
+                      ? project.imageUrls[modalImageIndex]
+                      : project.imageUrls[modalImageIndex].url"
+                :src="typeof project.imageUrls[modalImageIndex] === 'string'
+                      ? project.imageUrls[modalImageIndex]
+                      : project.imageUrls[modalImageIndex].url"
+                :alt="typeof project.imageUrls[modalImageIndex] === 'string'
+                      ? 'Project image'
+                      : (project.imageUrls[modalImageIndex].fileName || 'Project image')"
                 class="modal-image max-w-full max-h-full object-contain transition-opacity duration-300"
                 @load="onModalImageLoad"
                 ref="modalImage"
@@ -687,10 +700,10 @@
                   'opacity-60 grayscale hover:grayscale-0 hover:opacity-90': modalImageIndex !== index 
                 }"
               >
-                <img 
-                  :src="image.url" 
-                  :alt="image.fileName || 'Thumbnail'"
-                  class="h-12 w-16 sm:h-16 sm:w-24 object-cover" 
+                <img
+                  :src="typeof image === 'string' ? image : image.url"
+                  :alt="typeof image === 'string' ? 'Thumbnail' : (image.fileName || 'Thumbnail')"
+                  class="h-12 w-16 sm:h-16 sm:w-24 object-cover"
                   loading="lazy"
                 />
               </div>
@@ -845,6 +858,45 @@ const loadProjectData = async (id) => {
     if (!project.value) {
       errorStore.showError('Project not found');
       router.push('/projects');
+      return;
+    }
+
+    // Ensure the project has the imageUrls property and it's properly formed
+    if (!project.value.imageUrls) {
+      project.value.imageUrls = [];
+      console.log("Project has no imageUrls property, initializing as empty array");
+    } else if (!Array.isArray(project.value.imageUrls)) {
+      console.error("Project imageUrls is not an array, resetting to empty array", project.value.imageUrls);
+      project.value.imageUrls = [];
+    }
+
+    // If there are no images in the project, try to fetch them from storage
+    if (project.value.imageUrls.length === 0) {
+      try {
+        console.log("Attempting to fetch images from storage for project", id);
+        const images = await storageStore.fetchProjectImages(id);
+        if (images && images.length > 0) {
+          console.log("Found images in storage", images);
+          project.value.imageUrls = images;
+        }
+      } catch (storageError) {
+        console.error("Error fetching images from storage:", storageError);
+      }
+    }
+
+    // Normalize image URLs to ensure they're in the correct format for the carousel
+    if (project.value.imageUrls.length > 0) {
+      project.value.imageUrls = project.value.imageUrls.map((image, index) => {
+        if (typeof image === 'string') {
+          // Convert string URLs to object format
+          return {
+            url: image,
+            fileName: `Image ${index + 1}`,
+            uploadDate: new Date().toISOString()
+          };
+        }
+        return image;
+      });
     }
   } catch (error) {
     errorStore.showError('Something went wrong while fetching project data.');
@@ -924,14 +976,45 @@ const handleImageUpload = async (event) => {
   const files = event.target.files;
   if (files.length > 0 && project.value) {
     try {
+      // Upload the photos
       const uploadedUrls = await storageStore.uploadProjectPhoto(files, projectId);
+
+      // Initialize imageUrls if it doesn't exist
       if (!project.value.imageUrls) {
         project.value.imageUrls = [];
       }
+
+      // Ensure it's an array
+      if (!Array.isArray(project.value.imageUrls)) {
+        project.value.imageUrls = [];
+      }
+
+      // Combine existing and new images
       project.value.imageUrls = [...project.value.imageUrls, ...uploadedUrls];
+
+      // Normalize image URLs to ensure they're all in object format
+      project.value.imageUrls = project.value.imageUrls.map((image, index) => {
+        if (typeof image === 'string') {
+          return {
+            url: image,
+            fileName: `Image ${index + 1}`,
+            uploadDate: new Date().toISOString()
+          };
+        }
+        return image;
+      });
+
+      // Update the project in Firestore
       await projectStore.updateProject(projectId, { imageUrls: project.value.imageUrls });
+
+      // Reset file input
+      event.target.value = '';
+
+      // Show success message
+      errorStore.showNotification('Images uploaded successfully', 'success');
     } catch (error) {
       errorStore.showError('Failed to upload images: ' + error.message);
+      console.error('Image upload error:', error);
     }
   }
 };
@@ -939,11 +1022,32 @@ const handleImageUpload = async (event) => {
 const deleteImage = async (image) => {
   if (project.value) {
     try {
-      await storageStore.deleteProjectImage(image.url, projectId);
-      project.value.imageUrls = project.value.imageUrls.filter(img => img.url !== image.url);
+      const imageUrl = typeof image === 'string' ? image : image.url;
+
+      if (!imageUrl) {
+        throw new Error('Invalid image format');
+      }
+
+      // Delete from Firebase Storage
+      await storageStore.deleteProjectImage(imageUrl, projectId);
+
+      // Remove from local state
+      project.value.imageUrls = project.value.imageUrls.filter(img => {
+        if (typeof img === 'string') {
+          return img !== imageUrl;
+        } else {
+          return img.url !== imageUrl;
+        }
+      });
+
+      // Update project in Firestore
       await projectStore.updateProject(projectId, { imageUrls: project.value.imageUrls });
+
+      // Show success message
+      errorStore.showNotification('Image deleted successfully', 'success');
     } catch (error) {
       errorStore.showError('Failed to delete image: ' + error.message);
+      console.error('Image deletion error:', error);
     }
   }
 };

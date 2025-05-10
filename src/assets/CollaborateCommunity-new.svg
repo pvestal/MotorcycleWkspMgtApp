@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="400px" viewBox="0 0 400 400" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Collaborate with Community</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="collaborateGradient">
+            <stop stop-color="#3880FF" offset="0%"></stop>
+            <stop stop-color="#4FD1C5" offset="100%"></stop>
+        </linearGradient>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+    <g id="Collaborate" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Background -->
+        <rect fill="#F5F7FA" x="0" y="0" width="400" height="400" rx="20"></rect>
+        
+        <!-- Motorcycle Workshop Scene -->
+        <g transform="translate(50, 50)">
+            <!-- Workshop Background -->
+            <rect fill="#2D3748" x="0" y="0" width="300" height="200" rx="15"></rect>
+            
+            <!-- Riders Group -->
+            <g transform="translate(40, 30)" filter="url(#shadow)">
+                <!-- Person 1 -->
+                <circle fill="#4FD1C5" cx="50" cy="50" r="40"></circle>
+                <path d="M50,25 C40,25 35,35 35,50 C35,65 40,75 50,75 C60,75 65,65 65,50 C65,35 60,25 50,25 Z" fill="#2D3748"></path>
+                <circle fill="#F5F7FA" cx="50" cy="40" r="10"></circle>
+                
+                <!-- Person 2 -->
+                <circle fill="#805AD5" cx="120" cy="50" r="40"></circle>
+                <path d="M120,25 C110,25 105,35 105,50 C105,65 110,75 120,75 C130,75 135,65 135,50 C135,35 130,25 120,25 Z" fill="#2D3748"></path>
+                <circle fill="#F5F7FA" cx="120" cy="40" r="10"></circle>
+                
+                <!-- Person 3 -->
+                <circle fill="#F56565" cx="190" cy="50" r="40"></circle>
+                <path d="M190,25 C180,25 175,35 175,50 C175,65 180,75 190,75 C200,75 205,65 205,50 C205,35 200,25 190,25 Z" fill="#2D3748"></path>
+                <circle fill="#F5F7FA" cx="190" cy="40" r="10"></circle>
+                
+                <!-- Connection Lines -->
+                <path d="M75,60 L95,60" stroke="#F5F7FA" stroke-width="2" stroke-dasharray="4,4"></path>
+                <path d="M145,60 L165,60" stroke="#F5F7FA" stroke-width="2" stroke-dasharray="4,4"></path>
+            </g>
+            
+            <!-- Collaboration Document -->
+            <g transform="translate(75, 120)">
+                <rect fill="#F5F7FA" x="0" y="0" width="150" height="100" rx="5"></rect>
+                <rect fill="#E2E8F0" x="10" y="10" width="130" height="10" rx="2"></rect>
+                <rect fill="#E2E8F0" x="10" y="30" width="130" height="10" rx="2"></rect>
+                <rect fill="#E2E8F0" x="10" y="50" width="130" height="10" rx="2"></rect>
+                <rect fill="#E2E8F0" x="10" y="70" width="60" height="10" rx="2"></rect>
+                
+                <!-- Checkmarks -->
+                <circle fill="#48BB78" cx="140" cy="35" r="10"></circle>
+                <path d="M135,35 L138,38 L145,31" stroke="#F5F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <circle fill="#48BB78" cx="140" cy="55" r="10"></circle>
+                <path d="M135,55 L138,58 L145,51" stroke="#F5F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </g>
+        </g>
+        
+        <!-- Title -->
+        <g transform="translate(50, 270)">
+            <text font-family="Arial" font-size="28" font-weight="bold" fill="#2D3748">
+                <tspan x="0" y="30">Collaborate with Community</tspan>
+            </text>
+            <rect fill="url(#collaborateGradient)" x="0" y="40" width="100" height="4" rx="2"></rect>
+            <text font-family="Arial" font-size="16" fill="#4A5568">
+                <tspan x="0" y="70">Share knowledge and expertise with fellow</tspan>
+                <tspan x="0" y="95">motorcycle enthusiasts and mechanics.</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

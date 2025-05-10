@@ -1,8 +1,8 @@
 /**
- * Shared Form Styles - MotoCraft Motorcycle Workshop Management App
- *
+ * Enhanced Form Styles - MotoCraft Motorcycle Workshop Management App
+ * 
  * This stylesheet contains standardized styles for all form components
- * across the application. Enhanced for better visual design, accessibility,
+ * across the application, with improved visual design, accessibility,
  * and user experience.
  */
 
@@ -107,7 +107,7 @@
   transition: var(--input-transition);
 }
 
-/* Floating labels */
+/* Ensures labels don't change position when focused */
 .form-label.floating {
   position: absolute;
   top: 0.7rem;
@@ -664,20 +664,22 @@ input:checked + .toggle-slider:before {
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
   }
   
   .form-actions {
     flex-direction: column-reverse;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
   
   .btn {
     width: 100%;
+    justify-content: center;
   }
   
   .form-container {
-    padding: 1rem;
+    padding: 1.5rem;
+    margin: 0 0.5rem;
   }
 }
 
@@ -786,7 +788,7 @@ input:checked + .toggle-slider:before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2368d391' width='24px' height='24px'%3E%3Cpath d='M0 0h24v24H0V0z' fill='none'/%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
 }
 
-:global(.dark) .form-checkbox,
+:global(.dark) .form-checkbox, 
 :global(.dark) .form-radio {
   background-color: var(--color-gray-700, #4a5568);
   border-color: var(--color-gray-600, #2d3748);

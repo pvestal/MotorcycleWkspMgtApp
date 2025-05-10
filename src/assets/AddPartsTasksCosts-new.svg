@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="400px" viewBox="0 0 400 400" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Add Parts, Tasks, and Costs</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="partsGradient">
+            <stop stop-color="#4299E1" offset="0%"></stop>
+            <stop stop-color="#667EEA" offset="100%"></stop>
+        </linearGradient>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+    <g id="Parts" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Background -->
+        <rect fill="#F5F7FA" x="0" y="0" width="400" height="400" rx="20"></rect>
+        
+        <!-- Main Content -->
+        <g transform="translate(50, 50)">
+            <!-- Dashboard Background -->
+            <rect fill="#2D3748" x="0" y="0" width="300" height="200" rx="15"></rect>
+            
+            <!-- Motorcycle Components UI -->
+            <g transform="translate(20, 30)" filter="url(#shadow)">
+                <!-- Motorcycle Silhouette -->
+                <g transform="translate(0, 20)">
+                    <path d="M50,30 C50,30 60,10 80,10 C100,10 100,20 110,20 C120,20 140,10 150,10 C160,10 170,20 170,30 C170,40 160,45 160,45 L130,45 C130,45 120,50 110,50 C100,50 90,45 90,45 L60,45 C60,45 50,40 50,30 Z" fill="#4299E1"></path>
+                    <circle fill="#1A202C" cx="70" cy="45" r="20"></circle>
+                    <circle fill="#2D3748" cx="70" cy="45" r="12"></circle>
+                    <circle fill="#1A202C" cx="150" cy="45" r="20"></circle>
+                    <circle fill="#2D3748" cx="150" cy="45" r="12"></circle>
+                </g>
+                
+                <!-- Parts List -->
+                <g transform="translate(180, 0)">
+                    <rect fill="#F5F7FA" x="0" y="0" width="100" height="120" rx="5"></rect>
+                    
+                    <!-- Header -->
+                    <rect fill="#4299E1" x="0" y="0" width="100" height="25" rx="5"></rect>
+                    <text font-family="Arial" font-size="12" font-weight="bold" fill="#F5F7FA" text-anchor="middle">
+                        <tspan x="50" y="17">PARTS LIST</tspan>
+                    </text>
+                    
+                    <!-- Part Items -->
+                    <g transform="translate(10, 35)">
+                        <rect fill="#EDF2F7" x="0" y="0" width="80" height="15" rx="2"></rect>
+                        <text font-family="Arial" font-size="9" fill="#2D3748">
+                            <tspan x="5" y="10">Engine Oil Filter</tspan>
+                        </text>
+                    </g>
+                    
+                    <g transform="translate(10, 55)">
+                        <rect fill="#EDF2F7" x="0" y="0" width="80" height="15" rx="2"></rect>
+                        <text font-family="Arial" font-size="9" fill="#2D3748">
+                            <tspan x="5" y="10">Brake Pads</tspan>
+                        </text>
+                    </g>
+                    
+                    <g transform="translate(10, 75)">
+                        <rect fill="#EDF2F7" x="0" y="0" width="80" height="15" rx="2"></rect>
+                        <text font-family="Arial" font-size="9" fill="#2D3748">
+                            <tspan x="5" y="10">Chain</tspan>
+                        </text>
+                    </g>
+                    
+                    <g transform="translate(10, 95)">
+                        <rect fill="#EDF2F7" x="0" y="0" width="80" height="15" rx="2"></rect>
+                        <text font-family="Arial" font-size="9" fill="#2D3748">
+                            <tspan x="5" y="10">Fuel Filter</tspan>
+                        </text>
+                    </g>
+                </g>
+                
+                <!-- Tasks -->
+                <g transform="translate(0, 90)">
+                    <rect fill="#F5F7FA" x="0" y="0" width="170" height="80" rx="5"></rect>
+                    
+                    <!-- Header -->
+                    <rect fill="#667EEA" x="0" y="0" width="170" height="25" rx="5"></rect>
+                    <text font-family="Arial" font-size="12" font-weight="bold" fill="#F5F7FA" text-anchor="middle">
+                        <tspan x="85" y="17">MAINTENANCE TASKS</tspan>
+                    </text>
+                    
+                    <!-- Task Items with Checkboxes -->
+                    <g transform="translate(10, 35)">
+                        <rect fill="#48BB78" x="0" y="0" width="15" height="15" rx="3"></rect>
+                        <path d="M3,7 L6,10 L12,4" stroke="#F5F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <text font-family="Arial" font-size="11" fill="#2D3748">
+                            <tspan x="25" y="12">Change oil & filter</tspan>
+                        </text>
+                    </g>
+                    
+                    <g transform="translate(10, 55)">
+                        <rect fill="#F5F7FA" x="0" y="0" width="15" height="15" rx="3" stroke="#CBD5E0" stroke-width="2"></rect>
+                        <text font-family="Arial" font-size="11" fill="#2D3748">
+                            <tspan x="25" y="12">Replace brake pads</tspan>
+                        </text>
+                    </g>
+                </g>
+                
+                <!-- Cost Indicator -->
+                <g transform="translate(0, 0)">
+                    <rect fill="#F5F7FA" x="0" y="0" width="170" height="25" rx="5"></rect>
+                    <text font-family="Arial" font-size="12" font-weight="bold" fill="#2D3748" text-anchor="start">
+                        <tspan x="10" y="17">TOTAL COST: $247.50</tspan>
+                    </text>
+                    <rect fill="#48BB78" x="140" y="5" width="20" height="15" rx="3"></rect>
+                    <text font-family="Arial" font-size="12" font-weight="bold" fill="#F5F7FA" text-anchor="middle">
+                        <tspan x="150" y="17">$</tspan>
+                    </text>
+                </g>
+            </g>
+        </g>
+        
+        <!-- Title -->
+        <g transform="translate(50, 270)">
+            <text font-family="Arial" font-size="28" font-weight="bold" fill="#2D3748">
+                <tspan x="0" y="30">Add Parts, Tasks, and Costs</tspan>
+            </text>
+            <rect fill="url(#partsGradient)" x="0" y="40" width="100" height="4" rx="2"></rect>
+            <text font-family="Arial" font-size="16" fill="#4A5568">
+                <tspan x="0" y="70">Track parts, maintenance tasks, and costs to</tspan>
+                <tspan x="0" y="95">keep your projects organized and on budget.</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

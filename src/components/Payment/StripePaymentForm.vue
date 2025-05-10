@@ -4,27 +4,35 @@
       <div class="loading-spinner"></div>
       <span>Loading payment form...</span>
     </div>
-    
+
     <div v-if="error" class="error-message">
       {{ error }}
     </div>
-    
+
     <form @submit.prevent="handleSubmit" v-if="!loading && mounted">
       <div class="form-group">
         <label for="card-element">Credit Card</label>
-        <div id="card-element" ref="cardElement" class="card-element"></div>
+        <!-- Using StripeElement component for card element -->
+        <StripeElement
+          v-if="stripeLoaded"
+          ref="stripeElement"
+          type="card"
+          :options="stripeElementOptions"
+          @change="handleStripeElementChange"
+        />
+        <div v-else id="card-element" ref="cardElement" class="card-element"></div>
         <div id="card-errors" class="card-errors" role="alert">{{ cardError }}</div>
       </div>
-      
+
       <div class="save-for-future">
         <input type="checkbox" id="save-card" v-model="saveForFuture" />
         <label for="save-card">Save this card for future payments</label>
       </div>
-      
-      <button 
-        type="submit" 
-        class="submit-button" 
-        :disabled="processing || !stripe"
+
+      <button
+        type="submit"
+        class="submit-button"
+        :disabled="processing || !stripeLoaded"
         :class="{ 'processing': processing }"
       >
         <span v-if="processing">Processing...</span>
@@ -39,6 +47,8 @@ import { ref, onMounted, onUnmounted, defineProps, defineEmits } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { stripeConfig } from '@/config/payment';
 import { useErrorStore } from '@/stores/errorStore';
+// Import from the correct package
+import { StripeElement } from '@vue-stripe/vue-stripe';
 
 // Props
 const props = defineProps({
@@ -65,64 +75,54 @@ const emit = defineEmits(['payment-success', 'payment-error', 'token-generated']
 
 // State
 const stripe = ref(null);
-const elements = ref(null);
-const card = ref(null);
-const cardElement = ref(null);
+const stripeElement = ref(null);
 const cardError = ref('');
 const loading = ref(true);
 const processing = ref(false);
-const mounted = ref(false);
+const mounted = ref(true);
 const error = ref('');
 const saveForFuture = ref(true);
+const stripeLoaded = ref(false);
 
 // Error store
 const errorStore = useErrorStore();
+
+// Stripe element options
+const stripeElementOptions = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#32325d',
+      fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+      fontSmoothing: 'antialiased',
+      '::placeholder': {
+        color: '#aab7c4'
+      }
+    },
+    invalid: {
+      color: '#fa755a',
+      iconColor: '#fa755a'
+    }
+  }
+};
+
+// Handle stripe element change
+const handleStripeElementChange = (event) => {
+  if (event.error) {
+    cardError.value = event.error.message;
+  } else {
+    cardError.value = '';
+  }
+};
 
 // Initialize Stripe
 onMounted(async () => {
   try {
     // Load Stripe
     stripe.value = await loadStripe(stripeConfig.publicKey);
-    
     if (stripe.value) {
-      // Create elements instance
-      elements.value = stripe.value.elements(stripeConfig.options);
-      
-      // Create and mount the card element
-      card.value = elements.value.create('card', {
-        style: {
-          base: {
-            fontSize: '16px',
-            color: '#32325d',
-            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-            fontSmoothing: 'antialiased',
-            '::placeholder': {
-              color: '#aab7c4'
-            }
-          },
-          invalid: {
-            color: '#fa755a',
-            iconColor: '#fa755a'
-          }
-        }
-      });
-      
-      if (cardElement.value) {
-        card.value.mount(cardElement.value);
-        
-        // Listen for card element changes and errors
-        card.value.on('change', (event) => {
-          if (event.error) {
-            cardError.value = event.error.message;
-          } else {
-            cardError.value = '';
-          }
-        });
-        
-        mounted.value = true;
-      }
+      stripeLoaded.value = true;
     }
-    
     loading.value = false;
   } catch (err) {
     error.value = 'Failed to load payment form. Please try again.';
@@ -131,27 +131,20 @@ onMounted(async () => {
   }
 });
 
-// Clean up on component unmount
-onUnmounted(() => {
-  if (card.value) {
-    card.value.destroy();
-  }
-});
-
 // Submit handler
 const handleSubmit = async () => {
-  if (!stripe.value || !card.value) {
+  if (!stripe.value || !stripeElement.value) {
     return;
   }
-  
+
   processing.value = true;
-  
+
   try {
     if (props.clientSecret) {
       // If client secret is provided, confirm the payment
       const { paymentIntent, error: confirmError } = await stripe.value.confirmCardPayment(props.clientSecret, {
         payment_method: {
-          card: card.value,
+          card: stripeElement.value.stripeElement,
           billing_details: {
             // We would normally collect billing details in a production app
             // but for this demo, we'll just use dummy values
@@ -160,11 +153,11 @@ const handleSubmit = async () => {
         },
         setup_future_usage: saveForFuture.value ? 'off_session' : undefined
       });
-      
+
       if (confirmError) {
         throw new Error(confirmError.message);
       }
-      
+
       if (paymentIntent.status === 'succeeded') {
         emit('payment-success', paymentIntent);
       } else {
@@ -172,12 +165,12 @@ const handleSubmit = async () => {
       }
     } else {
       // If no client secret, just create a token for later use
-      const { token, error: tokenError } = await stripe.value.createToken(card.value);
-      
+      const { token, error: tokenError } = await stripe.value.createToken(stripeElement.value.stripeElement);
+
       if (tokenError) {
         throw new Error(tokenError.message);
       }
-      
+
       emit('token-generated', {
         token: token.id,
         last4: token.card.last4,

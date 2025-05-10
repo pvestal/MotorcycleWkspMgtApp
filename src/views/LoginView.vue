@@ -20,12 +20,30 @@
         </button>
       </div>
       <div v-else-if="userStore.isAnonymous">
-        <p class="guest-message">You're currently browsing as a guest.</p>
+        <p class="guest-message" v-if="isDemoActive">You're currently using the demo mode!</p>
+        <p class="guest-message" v-else>You're currently browsing as a guest.</p>
+
+        <div v-if="isDemoActive" class="demo-time-info">
+          <span class="material-symbols-outlined">timer</span>
+          <span>{{ formattedTime }} remaining</span>
+        </div>
+
         <p class="upgrade-message">Sign in to save your progress and access all features:</p>
         <button @click="loginWithGoogle" id="loginGoogleBtn" class="google-auth-btn">
           <span class="google-icon"></span>
           {{ mode === 'signup' ? 'Sign up with Google' : 'Login with Google' }}
         </button>
+
+        <div v-if="isDemoActive" class="demo-features">
+          <h3>Demo Features Available:</h3>
+          <ul>
+            <li>Project Management</li>
+            <li>Parts Catalog</li>
+            <li>Task Tracking</li>
+            <li>Cost Management</li>
+          </ul>
+          <p class="demo-note">Note: Demo access expires in {{ formattedTime }}</p>
+        </div>
       </div>
       <div v-else>
         <p class="welcome-message">Welcome, {{ userStore.userDisplayName }}!</p>
@@ -45,10 +63,16 @@
 </template>
 
 <script setup>
-import { useUserStore } from '../stores/userStore'; 
+import { ref, onMounted } from 'vue';
+import { useUserStore } from '../stores/userStore';
 import { useErrorStore } from '@/stores/errorStore';
 import userProfileComponent from '../components/Users/userProfileComponent.vue'
 import { defineProps } from 'vue';
+import {
+  initDemoService,
+  isDemoActive as checkDemoActive,
+  getFormattedRemainingTime
+} from '@/services/demoService';
 
 const props = defineProps({
   mode: {
@@ -57,12 +81,29 @@ const props = defineProps({
   }
 });
 
-const userStore = useUserStore(); 
+const userStore = useUserStore();
 const errorStore = useErrorStore();
+const isDemoActive = ref(false);
+const formattedTime = ref('');
 
-// watch(() => userStore.user, (newUser) => {
-//   console.log("User state changed:", newUser);
-// }, { deep: true });
+// Update timer periodically
+const updateTimer = () => {
+  if (isDemoActive.value) {
+    formattedTime.value = getFormattedRemainingTime();
+  }
+};
+
+// Update demo status
+onMounted(() => {
+  initDemoService();
+  isDemoActive.value = checkDemoActive();
+  updateTimer();
+
+  // Refresh timer every minute
+  const interval = setInterval(updateTimer, 60000);
+
+  // We'll omit cleanup as this component is unmounted with page navigation
+});
 
 const loginWithGoogle = async () => {
   console.log("Initiating Google login");
@@ -249,15 +290,70 @@ const logOut = async () => {
   text-decoration: underline;
 }
 
+/* Demo-specific styles */
+.demo-time-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(79, 209, 197, 0.1);
+  border-radius: var(--radius-md, 8px);
+  color: var(--color-primary, #4fd1c5);
+}
+
+.demo-time-info .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.demo-features {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  text-align: left;
+}
+
+.demo-features h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text-primary, #2d3748);
+}
+
+.demo-features ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.demo-features li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #4a5568);
+}
+
+.demo-features li:before {
+  content: '✓';
+  color: var(--color-primary, #4fd1c5);
+  margin-right: 0.5rem;
+}
+
+.demo-note {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary, #718096);
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
 @media (max-width: 480px) {
   .auth-container {
     padding: 1.5rem 1rem;
   }
-  
+
   .auth-title {
     font-size: 1.5rem;
   }
-  
+
   .auth-description {
     font-size: 0.9rem;
   }

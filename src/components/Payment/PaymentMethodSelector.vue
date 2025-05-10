@@ -57,6 +57,7 @@ import { paymentConfig } from '@/config/payment';
 import StripePaymentForm from './StripePaymentForm.vue';
 import PayPalPaymentForm from './PayPalPaymentForm.vue';
 import { useErrorStore } from '@/stores/errorStore';
+import { loadStripe } from '@stripe/stripe-js';
 
 // Props
 const props = defineProps({

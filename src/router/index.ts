@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw, RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import { isDemoActive, isFeatureAvailableInDemo } from '@/services/demoService';
 
 // Import views
 import HomeView from '@/views/HomeView.vue';
@@ -9,6 +10,7 @@ import ProfileView from '@/views/ProfileView.vue';
 import UserManagement from '@/components/Users/UserManagement.vue';
 import EditUser from '@/components/Users/EditUser.vue';
 import DataRetentionManager from '@/components/admin/DataRetentionManager.vue';
+import DemoRestrictionAlert from '@/components/Demo/DemoRestrictionAlert.vue';
 
 // Task-related components
 import TasksView from '@/views/TasksView.vue';
@@ -61,6 +63,7 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/login', name: 'Login', component: LoginView },
   { path: '/signup', name: 'SignUp', component: LoginView, props: { mode: 'signup' } },
   { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true, requiresAdmin: false }},
+  { path: '/demo-restricted', name: 'DemoRestricted', component: DemoRestrictionAlert, props: route => ({ featureAttempted: route.query.feature, message: route.query.message }) },
 
   { path: '/users', name: 'UserManagement', component: UserManagement, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
   { path: '/editUser/:id', name: 'EditUser', component: EditUser, props: true, meta: { requiresAuth: true, requiresAdmin: true }},
@@ -99,29 +102,92 @@ const router = createRouter({
 });
 
 router.beforeEach(async (
-  to: RouteLocationNormalized, 
-  from: RouteLocationNormalized, 
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) => {
   const userStore = useUserStore();
   await userStore.fetchUser(); // Ensure user data is loaded before checking auth
-  
+
   // Check if the route requires authentication
   const requiresAuth = to.meta.requiresAuth === true;
   const requiresAdmin = to.meta.requiresAdmin === true;
-  
+
+  // Get the feature name from the route path
+  // We'll use this to check if demo users can access this feature
+  const getFeatureFromRoute = (path: string): string | null => {
+    if (path.includes('/projects')) return 'project-management';
+    if (path.includes('/parts') || path.includes('/part-catalog')) return 'parts-catalog';
+    if (path.includes('/tasks')) return 'task-tracking';
+    if (path.includes('/costs')) return 'cost-tracking';
+    return null;
+  };
+
+  const feature = getFeatureFromRoute(to.path);
+  const demoActive = isDemoActive();
+
   // If the route requires authentication and the user is not authenticated
-  if (requiresAuth && !userStore.isAuthenticated) {
-    // Attempt to sign in anonymously if they are not authenticated
-    await userStore.loginAnonymously();
-    
-    if (userStore.isAuthenticated) {
-      next(); // Allow navigation if the user is authenticated
+  if (requiresAuth) {
+    // Check if demo is active
+    if (demoActive) {
+      // Check if this feature is available in demo mode
+      if (feature && isFeatureAvailableInDemo(feature)) {
+        // Allow demo users to access this feature
+        if (!userStore.user) {
+          // Ensure user is at least anonymously logged in for demo
+          await userStore.loginAnonymously();
+        }
+        next();
+      } else {
+        // Feature is not available in demo mode, redirect to restriction page
+        // Determine which feature was attempted
+        let featureName = feature || 'unknown';
+        let restrictionMessage = '';
+
+        if (requiresAdmin) {
+          restrictionMessage = 'Administrative features are not available in demo mode.';
+        } else if (to.path.includes('/profile')) {
+          restrictionMessage = 'User profiles cannot be saved in demo mode.';
+        } else if (to.path.includes('/subscription')) {
+          restrictionMessage = 'Subscription management is not available in demo mode.';
+        } else {
+          restrictionMessage = 'This feature is not available in demo mode. Sign up for full access.';
+        }
+
+        next({
+          name: 'DemoRestricted',
+          query: {
+            feature: featureName,
+            message: restrictionMessage
+          }
+        });
+      }
+    } else if (!userStore.isAuthenticated) {
+      // Attempt to sign in anonymously if they are not authenticated
+      await userStore.loginAnonymously();
+
+      if (userStore.isAuthenticated) {
+        next(); // Allow navigation if the user is authenticated
+      } else {
+        next({ name: 'Login' }); // Redirect to login if anonymous sign-in fails
+      }
     } else {
-      next({ name: 'Login' }); // Redirect to login if anonymous sign-in fails
+      next(); // User is authenticated, allow navigation
     }
   } else if (requiresAdmin && !userStore.isAdmin) {
-    next({ name: 'HomeView' }); // Redirect to home if the user is not an admin
+    // Admin-only route but user is not admin
+    if (demoActive) {
+      // In demo mode, show a specific restriction message
+      next({
+        name: 'DemoRestricted',
+        query: {
+          feature: 'admin',
+          message: 'Administrative features are not available in demo mode. Sign up for a full account to access these features.'
+        }
+      });
+    } else {
+      next({ name: 'HomeView' }); // Redirect to home if the user is not an admin
+    }
   } else {
     next(); // Proceed to the requested route
   }
