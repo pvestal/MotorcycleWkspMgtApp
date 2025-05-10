@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { auth, googleProvider, signInWithPopup, signInAnonymously, db, analytics, functions } from "../fbConfig";
-import { collection, getDocs, setDoc, doc, getDoc, query, updateDoc, Timestamp } from "firebase/firestore";
+import { collection, getDocs, setDoc, doc, getDoc, query, updateDoc, Timestamp, where, deleteDoc } from "firebase/firestore";
 import { useErrorStore } from "./errorStore";
 import router from "../router";
 import { logEvent } from 'firebase/analytics';
 import { linkWithCredential, GoogleAuthProvider, getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { httpsCallable } from 'firebase/functions';
-import { User, UserUpdate, SubscriptionFeatures } from "../types";
+import { User, UserUpdate, SubscriptionFeatures, PaymentMethod, PaymentTransaction } from "../types";
 
 // Function to generate a random avatar URL using DiceBear
 const generateAvatarURL = (gender: string): string => {
@@ -19,6 +19,8 @@ interface UserState {
   user: User | null;
   users: User[];
   subscriptionFeatures: Partial<SubscriptionFeatures> | null;
+  paymentMethods: PaymentMethod[];
+  paymentHistory: PaymentTransaction[];
 }
 
 export const useUserStore = defineStore({
@@ -27,6 +29,8 @@ export const useUserStore = defineStore({
     user: null,
     users: [],
     subscriptionFeatures: null,
+    paymentMethods: [],
+    paymentHistory: [],
   }),
   getters: {
     isAuthenticated: (state): boolean => !!state.user && !state.user.isAnonymous,
@@ -50,6 +54,10 @@ export const useUserStore = defineStore({
       if (!state.subscriptionFeatures) return false;
       return state.subscriptionFeatures[featureName as keyof SubscriptionFeatures] === true;
     },
+    // Payment related getters
+    userPaymentMethods: (state): PaymentMethod[] => state.paymentMethods,
+    defaultPaymentMethod: (state): PaymentMethod | undefined => state.paymentMethods.find(method => method.isDefault),
+    paymentTransactions: (state): PaymentTransaction[] => state.paymentHistory,
   },
   actions: {
     setUser(user: User): void {
@@ -75,6 +83,9 @@ export const useUserStore = defineStore({
     clearUser(): void {
       this.user = null;
       this.users = [];
+      this.paymentMethods = [];
+      this.paymentHistory = [];
+      this.subscriptionFeatures = null;
     },
     async loginWithGoogle(): Promise<void> {
       const errorStore = useErrorStore();
@@ -165,18 +176,25 @@ export const useUserStore = defineStore({
       const errorStore = useErrorStore();
       try {
         const currentUser = auth.currentUser;
-    
+
         if (currentUser) {
           const userRef = doc(db, "users", currentUser.uid);
           const userDoc = await getDoc(userRef);
-    
+
           if (userDoc.exists()) {
             this.setUser(userDoc.data() as User);
-            
+
             // Check subscription status using the cloud function
             await this.checkSubscription();
+
+            // Load payment methods for paid users
+            const userData = userDoc.data() as User;
+            if (userData.subscriptionType && userData.subscriptionType !== 'free') {
+              await this.loadPaymentMethods();
+              await this.loadPaymentHistory();
+            }
           } else {
-            await this.loginAnonymously(); 
+            await this.loginAnonymously();
           }
         } else {
           this.clearUser();
@@ -239,28 +257,28 @@ export const useUserStore = defineStore({
       }
     },
     
-    async updateSubscription(subscriptionType: string, billingCycle: 'monthly' | 'yearly' = 'monthly'): Promise<boolean> {
+    async updateSubscription(subscriptionType: string, billingCycle: 'monthly' | 'yearly' = 'monthly', subscriptionId?: string): Promise<boolean> {
       const errorStore = useErrorStore();
       try {
         if (!this.user || !this.user.uid) {
           errorStore.showError("You must be logged in to manage subscriptions");
           return false;
         }
-        
+
         // In a real app, this would call a backend endpoint to process payment
         // and update the subscription in a payment provider system
-        
+
         // For demo purposes, directly update in Firestore
         const now = new Date();
         const endDate = new Date(now);
-        
+
         // Set subscription end date based on billing cycle
         if (billingCycle === 'yearly') {
           endDate.setFullYear(endDate.getFullYear() + 1);
         } else {
           endDate.setMonth(endDate.getMonth() + 1);
         }
-        
+
         const subscriptionData: UserUpdate = {
           subscriptionType,
           subscriptionStatus: 'active',
@@ -268,16 +286,228 @@ export const useUserStore = defineStore({
           subscriptionEndDate: Timestamp.fromDate(endDate),
           updatedAt: Timestamp.now()
         };
-        
+
+        // If subscription ID is provided, add it to the update
+        if (subscriptionId) {
+          subscriptionData.subscriptionId = subscriptionId;
+        }
+
         await this.updateUser(this.user.uid, subscriptionData);
-        
+
         // Refresh subscription features
         await this.checkSubscription();
-        
+
         return true;
       } catch (error: any) {
         errorStore.showError("Failed to update subscription: " + error.message);
         return false;
+      }
+    },
+
+    // Payment Method Management
+    async loadPaymentMethods(): Promise<PaymentMethod[]> {
+      const errorStore = useErrorStore();
+      try {
+        if (!this.user || !this.user.uid) {
+          throw new Error("User must be authenticated to load payment methods");
+        }
+
+        const paymentMethodsRef = collection(db, 'users', this.user.uid, 'paymentMethods');
+        const querySnapshot = await getDocs(paymentMethodsRef);
+
+        // Filter out deleted payment methods
+        this.paymentMethods = querySnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as PaymentMethod))
+          .filter(method => !method.deleted);
+
+        return this.paymentMethods;
+      } catch (error: any) {
+        errorStore.showError("Error loading payment methods: " + error.message);
+        return [];
+      }
+    },
+
+    async addPaymentMethod(paymentMethod: Partial<PaymentMethod>): Promise<PaymentMethod | null> {
+      const errorStore = useErrorStore();
+      try {
+        if (!this.user || !this.user.uid) {
+          throw new Error("User must be authenticated to add payment method");
+        }
+
+        const paymentMethodsRef = collection(db, 'users', this.user.uid, 'paymentMethods');
+
+        // Check if this should be the default payment method
+        let isDefault = paymentMethod.isDefault || false;
+
+        // If this is the first payment method, make it default
+        if (this.paymentMethods.length === 0) {
+          isDefault = true;
+        }
+
+        // If setting as default, update any existing default methods
+        if (isDefault && this.paymentMethods.length > 0) {
+          const defaultMethod = this.paymentMethods.find(m => m.isDefault);
+          if (defaultMethod) {
+            await updateDoc(doc(db, 'users', this.user.uid, 'paymentMethods', defaultMethod.id), {
+              isDefault: false
+            });
+
+            // Update in local state
+            const index = this.paymentMethods.findIndex(m => m.id === defaultMethod.id);
+            if (index !== -1) {
+              this.paymentMethods[index].isDefault = false;
+            }
+          }
+        }
+
+        // Create a new payment method document
+        const newPaymentMethod: PaymentMethod = {
+          id: '', // will be set after doc creation
+          type: paymentMethod.type || 'card',
+          name: paymentMethod.name || 'Unnamed Card',
+          info: paymentMethod.info || '',
+          isDefault,
+          lastFour: paymentMethod.lastFour,
+          expiryDate: paymentMethod.expiryDate,
+          providerToken: paymentMethod.providerToken,
+          createdAt: Timestamp.now()
+        };
+
+        // Add to Firestore
+        const docRef = doc(paymentMethodsRef);
+        newPaymentMethod.id = docRef.id;
+        await setDoc(docRef, newPaymentMethod);
+
+        // Add to local state
+        this.paymentMethods.push(newPaymentMethod);
+
+        return newPaymentMethod;
+      } catch (error: any) {
+        errorStore.showError("Error adding payment method: " + error.message);
+        return null;
+      }
+    },
+
+    async updatePaymentMethod(methodId: string, updates: Partial<PaymentMethod>): Promise<boolean> {
+      const errorStore = useErrorStore();
+      try {
+        if (!this.user || !this.user.uid) {
+          throw new Error("User must be authenticated to update payment method");
+        }
+
+        const paymentMethodRef = doc(db, 'users', this.user.uid, 'paymentMethods', methodId);
+
+        // Handle default flag updates
+        if (updates.isDefault) {
+          // Update any existing default methods
+          const currentDefault = this.paymentMethods.find(m => m.isDefault && m.id !== methodId);
+          if (currentDefault) {
+            await updateDoc(doc(db, 'users', this.user.uid, 'paymentMethods', currentDefault.id), {
+              isDefault: false
+            });
+
+            // Update in local state
+            const index = this.paymentMethods.findIndex(m => m.id === currentDefault.id);
+            if (index !== -1) {
+              this.paymentMethods[index].isDefault = false;
+            }
+          }
+        }
+
+        // Update the method in Firestore
+        await updateDoc(paymentMethodRef, {
+          ...updates,
+          updatedAt: Timestamp.now()
+        });
+
+        // Update in local state
+        const index = this.paymentMethods.findIndex(m => m.id === methodId);
+        if (index !== -1) {
+          this.paymentMethods[index] = {
+            ...this.paymentMethods[index],
+            ...updates,
+            updatedAt: Timestamp.now()
+          };
+        }
+
+        return true;
+      } catch (error: any) {
+        errorStore.showError("Error updating payment method: " + error.message);
+        return false;
+      }
+    },
+
+    async deletePaymentMethod(methodId: string): Promise<boolean> {
+      const errorStore = useErrorStore();
+      try {
+        if (!this.user || !this.user.uid) {
+          throw new Error("User must be authenticated to delete payment method");
+        }
+
+        const paymentMethodRef = doc(db, 'users', this.user.uid, 'paymentMethods', methodId);
+
+        // Get the method to check if it's default
+        const methodIndex = this.paymentMethods.findIndex(m => m.id === methodId);
+        if (methodIndex === -1) {
+          throw new Error("Payment method not found");
+        }
+
+        const method = this.paymentMethods[methodIndex];
+
+        // If deleting default method, set another one as default
+        if (method.isDefault) {
+          const otherMethods = this.paymentMethods.filter(m => m.id !== methodId);
+
+          if (otherMethods.length > 0) {
+            // Set the first other method as default
+            await this.updatePaymentMethod(otherMethods[0].id, { isDefault: true });
+          }
+        }
+
+        // Mark as deleted instead of actually deleting (soft delete)
+        await updateDoc(paymentMethodRef, {
+          deleted: true,
+          deletedAt: Timestamp.now()
+        });
+
+        // Remove from local state
+        this.paymentMethods = this.paymentMethods.filter(m => m.id !== methodId);
+
+        return true;
+      } catch (error: any) {
+        errorStore.showError("Error deleting payment method: " + error.message);
+        return false;
+      }
+    },
+
+    async loadPaymentHistory(): Promise<PaymentTransaction[]> {
+      const errorStore = useErrorStore();
+      try {
+        if (!this.user || !this.user.uid) {
+          throw new Error("User must be authenticated to view payment history");
+        }
+
+        const transactionsQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', this.user.uid)
+        );
+
+        const transactionsSnapshot = await getDocs(transactionsQuery);
+
+        this.paymentHistory = transactionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as PaymentTransaction)).sort((a, b) =>
+          b.createdAt.toMillis() - a.createdAt.toMillis()
+        );
+
+        return this.paymentHistory;
+      } catch (error: any) {
+        errorStore.showError("Error loading payment history: " + error.message);
+        return [];
       }
     },
     async fetchAllUsers(): Promise<void> {

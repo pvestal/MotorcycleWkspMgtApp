@@ -6,6 +6,12 @@ const cors = require("cors")({ origin: true });
 const { sanitizeInput } = require("./utils/sanitizer");
 const { validateAuthorization } = require("./utils/auth");
 const { subscriptionPlans, aiHelpdeskCapabilities, getAiHelpdeskTier } = require("./utils/subscription");
+const {
+  processSubscriptionPayment,
+  cancelSubscription,
+  getSubscriptionDetails,
+  validateCouponCode
+} = require("./utils/payment");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -896,28 +902,28 @@ exports.getAiHelpdeskConversations = onCall({
     if (!uid) {
       throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
-    
+
     // Get user subscription details
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
       throw new HttpsError('not-found', 'User profile not found');
     }
-    
+
     const userData = userDoc.data();
     const subscriptionType = userData.subscriptionType || 'free';
-    
+
     // Check if user can access AI helpdesk
     if (subscriptionType === 'free') {
       throw new HttpsError('permission-denied', 'AI Helpdesk requires a paid subscription');
     }
-    
+
     // Get conversations for this user
     const conversationsSnapshot = await db.collection('aiConversations')
       .where('userId', '==', uid)
       .orderBy('updatedAt', 'desc')
       .limit(20)
       .get();
-    
+
     const conversations = [];
     conversationsSnapshot.forEach(doc => {
       conversations.push({
@@ -927,11 +933,308 @@ exports.getAiHelpdeskConversations = onCall({
         updatedAt: doc.data().updatedAt ? doc.data().updatedAt.toDate().toISOString() : null
       });
     });
-    
+
     return { conversations };
   } catch (error) {
     logger.error('Error fetching AI helpdesk conversations', error);
     throw new HttpsError('internal', 'Failed to fetch AI helpdesk conversations', error);
+  }
+});
+
+// Process a subscription payment
+exports.processSubscription = onCall({
+  cors: true,
+  maxInstances: 10
+}, async (request) => {
+  try {
+    const uid = request.auth.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Get the request data
+    const {
+      subscriptionPlan,
+      billingCycle,
+      paymentMethodData,
+      processor = 'stripe',
+      couponCode
+    } = request.data;
+
+    // Validate inputs
+    if (!subscriptionPlan || !billingCycle || !paymentMethodData) {
+      throw new HttpsError('invalid-argument', 'Missing required fields');
+    }
+
+    if (subscriptionPlan === 'free') {
+      // For free plan, just update the user record
+      await db.collection('users').doc(uid).update({
+        subscriptionType: 'free',
+        subscriptionStatus: 'active',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return {
+        success: true,
+        subscriptionId: null,
+        planType: 'free'
+      };
+    }
+
+    // Get user data
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      throw new HttpsError('not-found', 'User profile not found');
+    }
+
+    const userData = userDoc.data();
+
+    // Process discount if coupon code is provided
+    let discountPercentage = 0;
+    let discountAmount = 0;
+
+    if (couponCode) {
+      const couponResult = await validateCouponCode(couponCode);
+      if (couponResult.valid) {
+        if (couponResult.discountPercentage) {
+          discountPercentage = couponResult.discountPercentage;
+        } else if (couponResult.discountAmount) {
+          discountAmount = couponResult.discountAmount;
+        }
+
+        // Log coupon usage
+        await db.collection('couponUsage').add({
+          couponCode,
+          userId: uid,
+          subscriptionPlan,
+          billingCycle,
+          discountPercentage,
+          discountAmount,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    }
+
+    // Process the payment using the payment utility
+    const result = await processSubscriptionPayment(
+      uid,
+      userData,
+      subscriptionPlan,
+      billingCycle,
+      paymentMethodData,
+      processor
+    );
+
+    if (!result.success) {
+      throw new HttpsError('internal', 'Failed to process payment');
+    }
+
+    // Create a transaction record
+    const transactionRef = db.collection('transactions').doc();
+    const transactionData = {
+      id: transactionRef.id,
+      userId: uid,
+      subscriptionPlan,
+      amount: result.amount,
+      currency: result.currency,
+      status: 'completed',
+      paymentMethod: result.paymentMethodId,
+      processor,
+      processorCustomerId: result.customerId,
+      processorSubscriptionId: result.subscriptionId,
+      billingCycle,
+      startDate: admin.firestore.Timestamp.fromDate(result.startDate),
+      endDate: admin.firestore.Timestamp.fromDate(result.endDate),
+      receiptUrl: result.receiptUrl,
+      discountPercentage,
+      discountAmount,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    await transactionRef.set(transactionData);
+
+    // Update the user's subscription information
+    await db.collection('users').doc(uid).update({
+      subscriptionType: subscriptionPlan,
+      subscriptionStatus: 'active',
+      subscriptionBillingCycle: billingCycle,
+      subscriptionEndDate: admin.firestore.Timestamp.fromDate(result.endDate),
+      subscriptionId: result.subscriptionId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Save the payment method if it doesn't exist yet
+    const paymentMethodRef = db.collection('users').doc(uid).collection('paymentMethods').doc();
+    await paymentMethodRef.set({
+      id: paymentMethodRef.id,
+      type: paymentMethodData.type || 'card',
+      name: paymentMethodData.name,
+      info: paymentMethodData.info || '',
+      lastFour: paymentMethodData.lastFour,
+      expiryDate: paymentMethodData.expiryDate,
+      isDefault: true,
+      processorPaymentMethodId: result.paymentMethodId,
+      processorType: processor,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Return the successful result
+    return {
+      success: true,
+      transactionId: transactionRef.id,
+      subscriptionId: result.subscriptionId,
+      endDate: result.endDate.toISOString(),
+      planType: subscriptionPlan
+    };
+
+  } catch (error) {
+    logger.error('Error processing subscription', error);
+    throw new HttpsError('internal', 'Failed to process subscription', error);
+  }
+});
+
+// Cancel a subscription
+exports.cancelSubscription = onCall({
+  cors: true,
+  maxInstances: 10
+}, async (request) => {
+  try {
+    const uid = request.auth.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Get the request data
+    const { reason, feedback } = request.data;
+
+    // Get user subscription data
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      throw new HttpsError('not-found', 'User profile not found');
+    }
+
+    const userData = userDoc.data();
+
+    // Check if the user has an active subscription
+    if (!userData.subscriptionId || userData.subscriptionType === 'free' || userData.subscriptionStatus !== 'active') {
+      throw new HttpsError('failed-precondition', 'No active subscription found');
+    }
+
+    // Assume default processor is stripe
+    const processor = userData.subscriptionProcessor || 'stripe';
+
+    // Cancel the subscription with the payment processor
+    const result = await cancelSubscription(userData.subscriptionId, processor);
+
+    if (!result.success) {
+      throw new HttpsError('internal', 'Failed to cancel subscription with payment processor');
+    }
+
+    // Update the user's subscription status to cancelled but maintain access until end of period
+    await db.collection('users').doc(uid).update({
+      subscriptionStatus: 'cancelled',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Record the cancellation feedback
+    await db.collection('subscriptionCancellations').add({
+      userId: uid,
+      subscriptionId: userData.subscriptionId,
+      reason,
+      feedback,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return {
+      success: true,
+      message: 'Subscription will be cancelled at the end of the current billing period'
+    };
+
+  } catch (error) {
+    logger.error('Error cancelling subscription', error);
+    throw new HttpsError('internal', 'Failed to cancel subscription', error);
+  }
+});
+
+// Validate a coupon code
+exports.validateCoupon = onCall({
+  cors: true,
+  maxInstances: 20
+}, async (request) => {
+  try {
+    const uid = request.auth.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { couponCode } = request.data;
+    if (!couponCode) {
+      throw new HttpsError('invalid-argument', 'Coupon code is required');
+    }
+
+    // Validate the coupon code
+    const result = await validateCouponCode(couponCode);
+
+    return result;
+  } catch (error) {
+    logger.error('Error validating coupon', error);
+    throw new HttpsError('internal', 'Failed to validate coupon', error);
+  }
+});
+
+// Check subscription status and details
+exports.getSubscriptionStatus = onCall({
+  cors: true,
+  maxInstances: 20
+}, async (request) => {
+  try {
+    const uid = request.auth.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Get user data
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      throw new HttpsError('not-found', 'User profile not found');
+    }
+
+    const userData = userDoc.data();
+
+    // If no subscription or free plan, return basic info
+    if (!userData.subscriptionId || userData.subscriptionType === 'free') {
+      return {
+        subscriptionType: userData.subscriptionType || 'free',
+        subscriptionStatus: userData.subscriptionStatus || 'inactive',
+        features: subscriptionPlans[userData.subscriptionType || 'free'] || subscriptionPlans.free
+      };
+    }
+
+    // For paid plans, check with the payment processor
+    const processor = userData.subscriptionProcessor || 'stripe';
+    const subscriptionDetails = await getSubscriptionDetails(userData.subscriptionId, processor);
+
+    // If there's a mismatch between our records and the processor, update our records
+    if (userData.subscriptionStatus === 'active' && !subscriptionDetails.isActive) {
+      await db.collection('users').doc(uid).update({
+        subscriptionStatus: 'inactive',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    return {
+      subscriptionType: userData.subscriptionType,
+      subscriptionStatus: subscriptionDetails.isActive ? 'active' : 'inactive',
+      billingCycle: userData.subscriptionBillingCycle || 'monthly',
+      currentPeriodEnd: subscriptionDetails.currentPeriodEnd.toISOString(),
+      features: subscriptionPlans[userData.subscriptionType] || subscriptionPlans.free,
+      isActive: subscriptionDetails.isActive
+    };
+
+  } catch (error) {
+    logger.error('Error checking subscription status', error);
+    throw new HttpsError('internal', 'Failed to check subscription status', error);
   }
 });
 

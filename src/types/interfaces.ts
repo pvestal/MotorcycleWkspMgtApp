@@ -21,6 +21,14 @@ export interface User {
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   lastLoginAt?: Timestamp;
+  // Subscription fields
+  subscriptionType?: 'free' | 'standard' | 'premium' | 'professional';
+  subscriptionStatus?: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  subscriptionBillingCycle?: 'monthly' | 'yearly';
+  subscriptionEndDate?: Timestamp;
+  subscriptionId?: string;
+  points?: number;
+  badges?: string[];
 }
 
 /**
@@ -135,4 +143,87 @@ export interface Contribution {
   confirmation: boolean;
   pointsEarned: number;
   timestamp: Timestamp;
+}
+
+/**
+ * Payment Method interface for user payment methods
+ */
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'paypal' | 'bank_account';
+  name: string;
+  info: string;
+  isDefault: boolean;
+  lastFour?: string;
+  expiryDate?: string;
+  providerToken?: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+  deleted?: boolean;
+  deletedAt?: Timestamp;
+}
+
+/**
+ * Payment Transaction interface for subscription payments
+ */
+export interface PaymentTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentMethod: string;
+  subscriptionPlan: string;
+  billingCycle: 'monthly' | 'yearly';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  receiptUrl?: string;
+  invoiceId?: string;
+  nextBillingDate?: Timestamp;
+}
+
+/**
+ * User subscription update interface
+ */
+export interface UserUpdate {
+  displayName?: string;
+  photoURL?: string;
+  role?: string;
+  userStatus?: string;
+  subscriptionType?: string;
+  subscriptionStatus?: string;
+  subscriptionBillingCycle?: 'monthly' | 'yearly';
+  subscriptionEndDate?: Timestamp;
+  subscriptionId?: string;
+  updatedAt?: Timestamp;
+  updatedBy?: UserReference;
+  points?: number;
+  badges?: string[];
+}
+
+/**
+ * Subscription features interface
+ */
+export interface SubscriptionFeatures {
+  projectLimit: number;
+  tasksPerProject: number;
+  partsPerProject: number;
+  costsPerProject: number;
+  imageUploadLimit: number;
+  canExportData: boolean;
+  canAccessInventory: boolean;
+  canUseAdvancedReporting: boolean;
+  canCreateTemplates: boolean;
+  canCreateTeam: boolean;
+  canInviteMembers: boolean;
+  canUseAdvancedAnalytics: boolean;
+  canScheduleReminders: boolean;
+  canReceiveAlerts: boolean;
+  canAccessAiHelpdesk: boolean;
+  aiHelpdeskMessagesPerMonth: number;
+  canIntegrateWithShopSystems?: boolean;
+  canUseWhiteLabel?: boolean;
+  canAccessPrioritySuppport?: boolean;
+  canUseApiAccess?: boolean;
+  canCreateCustomForms?: boolean;
 }
