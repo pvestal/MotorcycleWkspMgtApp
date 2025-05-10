@@ -5,8 +5,18 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "nodeVersion": "22.x"
+        "nodeVersion": "22.x",
+        "buildCommand": "npm run build"
       }
     }
-  ]
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

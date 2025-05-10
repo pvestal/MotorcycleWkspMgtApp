@@ -5,9 +5,9 @@
 
 // Stripe configuration
 export const stripeConfig = {
-  // These are test keys and would be replaced with real keys in production
-  // The keys would typically be loaded from environment variables
-  publicKey: 'pk_test_51NjE5JDMFXw4jUiDf76oGbLBvMsVQPZ3L2ErJ2PaxsWNQ8EoBeU5t9nEcvSLlTavtXcQijbioXLbZaRZh6Pf9iC100XXwUgNhH',
+  // Load from environment variables
+  publicKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
+    'pk_test_51NjE5JDMFXw4jUiDf76oGbLBvMsVQPZ3L2ErJ2PaxsWNQ8EoBeU5t9nEcvSLlTavtXcQijbioXLbZaRZh6Pf9iC100XXwUgNhH', // Fallback to test key
   options: {
     apiVersion: '2023-10-16',
     locale: 'en'
@@ -16,8 +16,9 @@ export const stripeConfig = {
 
 // PayPal configuration
 export const paypalConfig = {
-  // These are test credentials and would be replaced with real credentials in production
-  clientId: 'AYXfM_27QRJuWUESLqThUi1Zy9jH3d_sGa_eiBnKLYpMKFtdETgXekTFN_GJhiVnD8kvHbiL7Qe1-wZK', // PayPal sandbox client ID
+  // Load from environment variables
+  clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID ||
+    'AYXfM_27QRJuWUESLqThUi1Zy9jH3d_sGa_eiBnKLYpMKFtdETgXekTFN_GJhiVnD8kvHbiL7Qe1-wZK', // Fallback to test client ID
   currency: 'USD',
   intent: 'capture',
   // Disable funding sources that are not relevant
